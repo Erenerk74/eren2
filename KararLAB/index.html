@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Novaşehir'i sürdürülebilir bir geleceğe taşıyabilir misin? Etkileşimli şehir planlama simülasyonu.">
+    <meta name="theme-color" content="#6366f1">
+    <title>KararLab - Novaşehir Sürdürülebilir Şehir Simülatörü</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="advanced-styles.css">
+    <link rel="stylesheet" href="theme-light.css">
+    <link rel="stylesheet" href="mobile-responsive.css">
+    <link rel="stylesheet" href="animations.css">
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='0.9em' font-size='90'>🏙️</text></svg>">
+</head>
+<body>
+    <!-- Ana Sayfa / Landing Page -->
+    <div id="landing-page" class="page active">
+        <div class="landing-background">
+            <div class="gradient-orb orb-1"></div>
+            <div class="gradient-orb orb-2"></div>
+            <div class="gradient-orb orb-3"></div>
+        </div>
+        
+        <header class="header">
+            <div class="logo">KararLab</div>
+            <nav class="nav">
+                <button class="theme-toggle" onclick="toggleTheme()" title="Tema Değiştir">
+                    <span class="theme-icon">🌙</span>
+                </button>
+                <button class="theme-toggle" onclick="toggleSound()" title="Ses Aç/Kapat">
+                    <span class="sound-icon">🔊</span>
+                </button>
+                <button class="btn-secondary" onclick="showLogin()">Giriş Yap</button>
+                <button class="btn-primary" onclick="showRegister()">Kayıt Ol</button>
+            </nav>
+        </header>
+
+        <section class="hero">
+            <div class="hero-badge">🎮 Etkileşimli Şehir Simülatörü</div>
+            <h1>Novaşehir'i sürdürülebilir bir geleceğe taşıyabilir misin?</h1>
+            <p class="hero-subtitle">Şehir planlama kararlarının etkilerini deneyimle, sürdürülebilirlik becerilerini geliştir</p>
+            <div class="hero-buttons">
+                <button class="btn-large btn-primary" onclick="showRegister()">
+                    <span>Hemen Başla</span>
+                    <span class="btn-arrow">→</span>
+                </button>
+                <button class="btn-large btn-secondary" onclick="startDemo()">Demo Oyna</button>
+            </div>
+            <div class="hero-stats">
+                <div class="stat-item">
+                    <div class="stat-number">3</div>
+                    <div class="stat-label">Karar Turu</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">6</div>
+                    <div class="stat-label">Gösterge</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">∞</div>
+                    <div class="stat-label">Olasılık</div>
+                </div>
+            </div>
+        </section>
+
+        <section class="features">
+            <div class="feature-card stagger-item hover-lift">
+                <div class="feature-icon floating">🌱</div>
+                <h3>Sürdürülebilirlik</h3>
+                <p>Çevre, ekonomi ve sosyal yaşam dengesini öğren</p>
+            </div>
+            <div class="feature-card stagger-item hover-lift">
+                <div class="feature-icon floating">🏙️</div>
+                <h3>Şehir Planlama</h3>
+                <p>Gerçek şehir yönetimi kararlarını simüle et</p>
+            </div>
+            <div class="feature-card stagger-item hover-lift">
+                <div class="feature-icon floating">📊</div>
+                <h3>Veriye Dayalı Karar</h3>
+                <p>Göstergelerle kararlarının etkisini gör</p>
+            </div>
+            <div class="feature-card stagger-item hover-lift">
+                <div class="feature-icon floating">👥</div>
+                <h3>Sınıf İçi Çalışma</h3>
+                <p>Grup çalışması ve tartışma için ideal</p>
+            </div>
+        </section>
+
+        <section class="cta-section">
+            <h2>Öğretmen misiniz?</h2>
+            <p>Sınıfınız için özel raporlar ve grup çalışması özellikleri sizi bekliyor</p>
+            <button class="btn-large btn-primary" onclick="showRegister()">Öğretmen Hesabı Oluştur</button>
+        </section>
+    </div>
+
+    <!-- Giriş Ekranı -->
+    <div id="login-page" class="page">
+        <div class="auth-container">
+            <h2>Giriş Yap</h2>
+            <form id="login-form" onsubmit="handleLogin(event)">
+                <input type="text" id="login-email" placeholder="Kullanıcı Adı veya E-posta" required>
+                <input type="password" id="login-password" placeholder="Şifre" required>
+                <label class="checkbox-label">
+                    <input type="checkbox"> Beni hatırla
+                </label>
+                <button type="submit" class="btn-primary btn-full">Giriş Yap</button>
+                <a href="#" class="link" onclick="showPasswordReset(); return false;">Şifremi unuttum</a>
+            </form>
+            <button class="btn-text" onclick="showLanding()">← Ana Sayfaya Dön</button>
+        </div>
+    </div>
+
+    <!-- Şifre Sıfırlama Ekranı -->
+    <div id="password-reset-page" class="page">
+        <div class="auth-container">
+            <h2>Şifre Sıfırlama</h2>
+            <p style="text-align: center; color: var(--text-secondary); margin-bottom: 2rem;">
+                Kullanıcı adınızı girin, yeni şifrenizi belirleyin.
+            </p>
+            <form id="password-reset-form" onsubmit="handlePasswordReset(event)">
+                <input type="text" id="reset-email" placeholder="Kullanıcı Adı" required>
+                <input type="password" id="reset-new-password" placeholder="Yeni Şifre" required>
+                <input type="password" id="reset-confirm-password" placeholder="Yeni Şifre (Tekrar)" required>
+                <button type="submit" class="btn-primary btn-full">Şifreyi Sıfırla</button>
+            </form>
+            <button class="btn-text" onclick="showLogin()">← Giriş Sayfasına Dön</button>
+        </div>
+    </div>
+
+    <!-- Kayıt Ekranı -->
+    <div id="register-page" class="page">
+        <div class="auth-container">
+            <h2>Kayıt Ol</h2>
+            <form id="register-form" onsubmit="handleRegister(event)">
+                <input type="text" id="reg-name" placeholder="Ad Soyad" required>
+                <input type="text" id="reg-email" placeholder="Kullanıcı Adı (benzersiz olmalı)" required>
+                <input type="password" id="reg-password" placeholder="Şifre" required>
+                <select id="reg-type" required onchange="toggleTeacherFields()">
+                    <option value="">Kullanıcı Tipi Seçin</option>
+                    <option value="student">Öğrenci</option>
+                    <option value="teacher">Öğretmen</option>
+                </select>
+                <div id="teacher-fields" style="display:none;">
+                    <input type="text" id="reg-school" placeholder="Okul Adı">
+                    <input type="text" id="reg-branch" placeholder="Branş">
+                </div>
+                <label class="checkbox-label">
+                    <input type="checkbox" required> KVKK ve gizlilik politikasını kabul ediyorum
+                </label>
+                <button type="submit" class="btn-primary btn-full">Kayıt Ol</button>
+            </form>
+            <button class="btn-text" onclick="showLanding()">← Ana Sayfaya Dön</button>
+        </div>
+    </div>
+
+    <!-- Öğrenci Paneli -->
+    <div id="student-panel" class="page">
+        <header class="dashboard-header">
+            <div class="logo">KararLab</div>
+            <div class="user-info">
+                <button class="theme-toggle" onclick="toggleTheme()" title="Tema Değiştir">
+                    <span class="theme-icon">🌙</span>
+                </button>
+                <span id="student-name"></span>
+                <button class="btn-secondary btn-small" onclick="logout()">Çıkış</button>
+            </div>
+        </header>
+
+        <div class="dashboard-container">
+            <div class="profile-card">
+                <h3>Profilim</h3>
+                <p><strong>Kullanıcı:</strong> <span id="profile-name"></span></p>
+                <p><strong>Tip:</strong> Öğrenci</p>
+                <p><strong>Oynanan Senaryo:</strong> <span id="scenarios-played">0</span></p>
+                
+                <!-- Seviye Sistemi -->
+                <div class="level-display">
+                    <div class="level-badge" id="player-level">Seviye 1</div>
+                    <div class="xp-container">
+                        <div class="xp-info">
+                            <span>XP: <span id="current-xp">0</span> / <span id="next-level-xp">100</span></span>
+                        </div>
+                        <div class="xp-bar-container">
+                            <div class="xp-bar" id="xp-bar" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="badges" id="student-badges">
+                    <span class="badge">🏆</span>
+                </div>
+                
+                <!-- Hızlı Erişim Butonları -->
+                <div class="quick-actions" style="display: flex; gap: 0.5rem; margin-top: 1rem; flex-wrap: wrap;">
+                    <button class="btn-small btn-secondary notification-button" onclick="showNotificationCenter()">
+                        🔔 Bildirimler
+                        <span class="notification-badge" style="display: none;">0</span>
+                    </button>
+                    <button class="btn-small btn-secondary" onclick="showPersonalStats()">� İstlatistikler</button>
+                    <button class="btn-small btn-secondary" onclick="showComparison()">⚖️ Karşılaştır</button>
+                    <button class="btn-small btn-secondary" onclick="showLeaderboard()">🏆 Liderlik</button>
+                    <button class="btn-small btn-secondary" onclick="showFriendsPanel()">👥 Arkadaşlar</button>
+                    <button class="btn-small btn-secondary" onclick="startQuiz()">🧠 Quiz</button>
+                    <button class="btn-small btn-secondary" onclick="showAchievements()">🎯 Başarılar</button>
+                    <button class="btn-small btn-secondary" onclick="showDailyQuests()">📅 Görevler</button>
+                </div>
+            </div>
+
+            <div class="scenarios-section">
+                <h3>Yeni Senaryo Başlat</h3>
+                <div class="scenario-card" onclick="startScenario('basic')">
+                    <h4>Novaşehir - Temel Senaryo</h4>
+                    <p>3 ana tur: Ulaşım, Yeşil Alan & İmar, Enerji & Atık</p>
+                    <span class="badge-recommended">Önerilen</span>
+                </div>
+            </div>
+
+            <div class="classes-section">
+                <h3>Sınıfım</h3>
+                <div id="student-class-info"></div>
+                <button class="btn-secondary" onclick="showJoinClassModal()">+ Sınıfa Katıl</button>
+            </div>
+
+            <div class="reports-section">
+                <h3>Geçmiş Raporlarım</h3>
+                <div id="past-reports"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Oyun Ekranı -->
+    <div id="game-screen" class="page">
+        <div class="game-container">
+            <div class="game-header">
+                <div class="logo">KararLab</div>
+                <div class="header-actions">
+                    <button class="theme-toggle" onclick="toggleTheme()" title="Tema Değiştir">
+                        <span class="theme-icon">🌙</span>
+                    </button>
+                    <div class="turn-indicator">
+                        <span id="current-turn">Tur 0</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="game-content">
+                <div class="game-main">
+                    <div id="game-panel"></div>
+                </div>
+
+                <div class="indicators-panel">
+                    <h3>Göstergeler</h3>
+                    <div class="indicator">
+                        <span>Hava Kalitesi</span>
+                        <span class="indicator-value" id="ind-air">Orta</span>
+                    </div>
+                    <div class="indicator">
+                        <span>Trafik Yoğunluğu</span>
+                        <span class="indicator-value" id="ind-traffic">Yüksek</span>
+                    </div>
+                    <div class="indicator">
+                        <span>Yeşil Alan</span>
+                        <span class="indicator-value" id="ind-green">%8</span>
+                    </div>
+                    <div class="indicator">
+                        <span>Karbon Emisyonu</span>
+                        <span class="indicator-value" id="ind-carbon">Yüksek</span>
+                    </div>
+                    <div class="indicator">
+                        <span>Yaşam Kalitesi</span>
+                        <span class="indicator-value" id="ind-quality">Orta</span>
+                    </div>
+                    <div class="indicator">
+                        <span>Ekonomi</span>
+                        <span class="indicator-value" id="ind-economy">Büyüyen</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Öğretmen Paneli -->
+    <div id="teacher-panel" class="page">
+        <header class="dashboard-header">
+            <div class="logo">KararLab</div>
+            <div class="user-info">
+                <button class="theme-toggle" onclick="toggleTheme()" title="Tema Değiştir">
+                    <span class="theme-icon">🌙</span>
+                </button>
+                <span id="teacher-name"></span>
+                <button class="btn-secondary btn-small" onclick="logout()">Çıkış</button>
+            </div>
+        </header>
+
+        <div class="dashboard-container">
+            <div class="profile-card">
+                <h3>Öğretmen Paneli</h3>
+                <p><strong>Ad:</strong> <span id="teacher-profile-name"></span></p>
+                <p><strong>Toplam Sınıf:</strong> <span id="total-classes">0</span></p>
+                <p><strong>Toplam Öğrenci:</strong> <span id="total-students">0</span></p>
+            </div>
+
+            <div class="classes-section">
+                <div class="section-header">
+                    <h3>Sınıflarım</h3>
+                    <button class="btn-primary" onclick="showCreateClass()">+ Yeni Sınıf</button>
+                </div>
+                <div id="classes-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sınıf Detay Ekranı -->
+    <div id="class-detail-page" class="page">
+        <header class="dashboard-header">
+            <div class="logo">KararLab</div>
+            <div class="user-info">
+                <button class="theme-toggle" onclick="toggleTheme()" title="Tema Değiştir">
+                    <span class="theme-icon">🌙</span>
+                </button>
+                <button class="btn-secondary btn-small" onclick="backToTeacherPanel()">← Geri</button>
+                <button class="btn-secondary btn-small" onclick="logout()">Çıkış</button>
+            </div>
+        </header>
+
+        <div class="dashboard-container">
+            <div class="profile-card">
+                <h2 id="class-detail-name"></h2>
+                <p><strong>Sınıf Kodu:</strong> <span id="class-detail-code"></span> 
+                    <button class="btn-small btn-secondary" onclick="copyClassCode()">📋 Kopyala</button>
+                </p>
+                <p><strong>Öğrenci Sayısı:</strong> <span id="class-detail-student-count">0</span></p>
+            </div>
+
+            <div class="classes-section">
+                <h3>Öğrenci Listesi</h3>
+                <div id="class-students-list"></div>
+            </div>
+
+            <div class="classes-section">
+                <div class="section-header">
+                    <h3>Sınıf Raporları</h3>
+                    <button class="btn-primary" onclick="downloadClassReport()">📥 PDF İndir</button>
+                </div>
+                <div id="class-reports"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Paneli -->
+    <div id="admin-panel" class="page">
+        <header class="dashboard-header">
+            <div class="logo">KararLab</div>
+            <div class="user-info">
+                <button class="theme-toggle" onclick="toggleTheme()" title="Tema Değiştir">
+                    <span class="theme-icon">🌙</span>
+                </button>
+                <span>Admin Panel</span>
+                <button class="btn-secondary btn-small" onclick="logout()">Çıkış</button>
+            </div>
+        </header>
+
+        <div class="dashboard-container">
+            <div class="admin-stats">
+                <div class="stat-card">
+                    <div class="stat-icon">👥</div>
+                    <div class="stat-info">
+                        <h3 id="admin-total-users">0</h3>
+                        <p>Toplam Kullanıcı</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">🎓</div>
+                    <div class="stat-info">
+                        <h3 id="admin-total-students">0</h3>
+                        <p>Öğrenci</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">👨‍🏫</div>
+                    <div class="stat-info">
+                        <h3 id="admin-total-teachers">0</h3>
+                        <p>Öğretmen</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">🎮</div>
+                    <div class="stat-info">
+                        <h3 id="admin-total-scenarios">0</h3>
+                        <p>Oynanan Senaryo</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="classes-section">
+                <div class="section-header">
+                    <h3>Kullanıcı Yönetimi</h3>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <button class="btn-secondary btn-small" onclick="exportUsersData()">📥 Dışa Aktar</button>
+                        <button class="btn-secondary btn-small" onclick="showAdminStats()">📊 Detaylı İstatistik</button>
+                    </div>
+                </div>
+                <div id="admin-users-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sınıf Kodu Giriş Modal -->
+    <div id="join-class-modal" class="modal">
+        <div class="modal-content">
+            <h3>Sınıfa Katıl</h3>
+            <input type="text" id="join-class-code" placeholder="Sınıf Kodunu Gir (örn: KRL-ABC123)" />
+            <div class="modal-actions">
+                <button class="btn-primary" onclick="joinClass()">Katıl</button>
+                <button class="btn-secondary" onclick="closeJoinClassModal()">İptal</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="theme.js"></script>
+    <script src="sound-system.js"></script>
+    <script src="animations.js"></script>
+    <script src="app.js"></script>
+    <script src="game-advanced.js"></script>
+    <script src="quiz-system.js"></script>
+    <script src="social-features.js"></script>
+    <script src="statistics.js"></script>
+    <script src="notifications.js"></script>
+</body>
+</html>

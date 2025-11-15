@@ -1,0 +1,64 @@
+╔══════════════════════════════════════════════════════════════╗
+║                                                              ║
+║   🚀 KARARLAB - ERO SUNUCUSU KURULUM REHBERİ               ║
+║                                                              ║
+╚══════════════════════════════════════════════════════════════╝
+
+📌 EN HIZLI YOL (2 DAKİKA):
+
+1. https://app.netlify.com/drop adresine git
+
+2. Bu klasördeki TÜM dosyaları sürükle-bırak:
+   ✓ index.html
+   ✓ app.js
+   ✓ styles.css
+   ✓ README.md
+   ✓ manifest.json
+   ✓ netlify.toml
+   ✓ vercel.json
+
+3. Deploy tamamlandıktan sonra:
+   - "Site settings" tıkla
+   - "Change site name" tıkla
+   - "ero" yaz (veya ero-kararlab)
+   - Save
+
+4. HAZIR! 🎉
+   Adresin: https://ero.netlify.app
+   
+   ✅ 7/24 çalışır
+   ✅ Ücretsiz
+   ✅ SSL dahil
+   ✅ Hızlı
+
+═══════════════════════════════════════════════════════════════
+
+📌 ALTERNATİF: GitHub Pages
+
+1. github.com'a git, kayıt ol
+2. "New repository" > İsim: "ero" > Create
+3. "uploading an existing file" > Dosyaları yükle
+4. Settings > Pages > Branch: main > Save
+5. Adres: https://kullaniciadin.github.io/ero
+
+═══════════════════════════════════════════════════════════════
+
+🎯 GİRİŞ BİLGİLERİ:
+
+Admin:
+  Kullanıcı: admin
+  Şifre: 123
+
+Yeni kullanıcılar kayıt olabilir!
+
+═══════════════════════════════════════════════════════════════
+
+💡 İPUCU: 
+Netlify en kolay ve hızlı çözüm. Sadece dosyaları sürükle-bırak!
+
+═══════════════════════════════════════════════════════════════
+
+❓ SORUN MU VAR?
+DEPLOY.md dosyasına bak, detaylı anlatım var.
+
+═══════════════════════════════════════════════════════════════
