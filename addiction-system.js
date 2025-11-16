@@ -204,15 +204,18 @@ document.addEventListener('click', (e) => {
     addictionState.lastActionTime = Date.now();
     addictionState.consecutiveActions++;
     
-    // Combo sistemi
+    // Combo sistemi (sessizce çalışsın, gösterme)
     if (addictionState.consecutiveActions > 10) {
         addictionState.comboMultiplier = Math.min(5, 1 + Math.floor(addictionState.consecutiveActions / 10));
-        showComboIndicator();
+        // showComboIndicator(); // Kaldırıldı
     }
     
-    // Her 100 tıklamada bonus
+    // Her 100 tıklamada bonus (sessizce ver)
     if (addictionState.totalClicks % 100 === 0) {
-        showClickMilestone(addictionState.totalClicks);
+        // showClickMilestone(addictionState.totalClicks); // Kaldırıldı
+        if (typeof addXP === 'function') {
+            addXP(addictionState.totalClicks / 10);
+        }
     }
     
     // Rastgele mini ödül
@@ -272,15 +275,22 @@ function showFloatingReward(text) {
 
 // Scroll takibi
 let scrollCount = 0;
+let lastScrollRewardDate = localStorage.getItem('lastScrollRewardDate') || '';
+
 document.addEventListener('scroll', () => {
     scrollCount++;
     addictionState.totalScrolls++;
     
-    if (scrollCount % 50 === 0) {
-        showToast('📜 Aktif kullanıcı! +5 XP', 'info');
+    // Günde 1 kere: Her 100 scroll'da bir ve bugün daha önce verilmemişse
+    const today = new Date().toDateString();
+    if (scrollCount % 100 === 0 && lastScrollRewardDate !== today) {
+        lastScrollRewardDate = today;
+        localStorage.setItem('lastScrollRewardDate', today);
+        
         if (typeof addXP === 'function') {
             addXP(5);
         }
+        // Toast gösterme, sadece sessizce XP ver
     }
 });
 

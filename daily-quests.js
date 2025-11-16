@@ -234,7 +234,7 @@ function showDailyQuestsPanel() {
     const modal = document.createElement('div');
     modal.className = 'modal active quests-modal';
     modal.innerHTML = `
-        <div class="modal-content" style="max-width: 600px; background: linear-gradient(135deg, rgba(102, 126, 234, 0.95) 0%, rgba(118, 75, 162, 0.95) 100%); backdrop-filter: blur(20px); color: white;">
+        <div class="modal-content" style="max-width: 600px; max-height: 90vh; display: flex; flex-direction: column; background: linear-gradient(135deg, rgba(102, 126, 234, 0.95) 0%, rgba(118, 75, 162, 0.95) 100%); backdrop-filter: blur(20px); color: white;">
             <h2 style="color: white;">📅 Günlük Görevler</h2>
             <p style="color: rgba(255, 255, 255, 0.9); margin-bottom: 2rem;">
                 Görevleri tamamla, ödül kazan! Tümünü bitir, bonus al!
@@ -255,7 +255,7 @@ function showDailyQuestsPanel() {
                 ` : ''}
             </div>
             
-            <div class="quests-list" style="display: grid; gap: 1rem; max-height: 400px; overflow-y: auto;">
+            <div class="quests-list" style="display: grid; gap: 1rem; max-height: 400px; overflow-y: auto; flex: 1; margin-bottom: 1rem;">
                 ${quests.map(quest => `
                     <div class="quest-card ${quest.completed ? 'completed' : ''}" style="
                         background: rgba(255, 255, 255, 0.15);
@@ -294,8 +294,8 @@ function showDailyQuestsPanel() {
                 `).join('')}
             </div>
             
-            <div class="modal-actions" style="margin-top: 2rem; display: flex; gap: 1rem; justify-content: center;">
-                <button class="btn-primary" style="background: white; color: #667eea; font-weight: bold; padding: 1rem 3rem; font-size: 1.1rem;" onclick="this.closest('.modal').remove()">
+            <div class="modal-actions" style="margin-top: auto; padding-top: 1rem; display: flex; gap: 1rem; justify-content: center; border-top: 2px solid rgba(255,255,255,0.2);">
+                <button class="btn-primary" style="background: white; color: #667eea; font-weight: bold; padding: 1rem 3rem; font-size: 1.1rem; box-shadow: 0 4px 12px rgba(0,0,0,0.2);" onclick="this.closest('.modal').remove()">
                     ✓ Kapat
                 </button>
             </div>

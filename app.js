@@ -2570,45 +2570,96 @@ function importData() {
 }
 
 // Veri senkronizasyon kodu oluştur
-function generateSyncCode() {
-    const data = {
-        users: getFromStorage('users') || [],
-        timestamp: Date.now()
-    };
-    
-    const code = btoa(JSON.stringify(data));
-    
-    const modal = document.createElement('div');
-    modal.className = 'modal active';
-    modal.innerHTML = `
-        <div class="modal-content">
-            <h2>🔄 Senkronizasyon Kodu</h2>
-            <p>Bu kodu diğer cihazda kullanarak verileri senkronize edebilirsin:</p>
-            <textarea id="sync-code" readonly style="width: 100%; height: 150px; padding: 1rem; border-radius: 8px; margin: 1rem 0;">${code}</textarea>
-            <button class="btn-primary" onclick="copySyncCode()">📋 Kopyala</button>
-            <button class="btn-secondary" onclick="closeModal(event)">Kapat</button>
-        </div>
-    `;
-    document.body.appendChild(modal);
+// Türkçe karakter desteği için encoding fonksiyonları
+function utf8ToBase64(str) {
+    try {
+        return btoa(unescape(encodeURIComponent(str)));
+    } catch (e) {
+        console.error('Encoding hatası:', e);
+        return btoa(str);
+    }
 }
 
-function copySyncCode() {
+function base64ToUtf8(str) {
+    try {
+        return decodeURIComponent(escape(atob(str)));
+    } catch (e) {
+        console.error('Decoding hatası:', e);
+        return atob(str);
+    }
+}
+
+// Global scope'a ekle
+window.generateSyncCode = function generateSyncCode() {
+    console.log('generateSyncCode çağrıldı');
+    
+    try {
+        const data = {
+            users: getFromStorage('users') || [],
+            timestamp: Date.now()
+        };
+        
+        console.log('Kullanıcı sayısı:', data.users.length);
+        
+        // Türkçe karakter desteği ile encode et
+        const code = utf8ToBase64(JSON.stringify(data));
+        console.log('Kod oluşturuldu, uzunluk:', code.length);
+        
+        const modal = document.createElement('div');
+        modal.className = 'modal active';
+        modal.innerHTML = `
+            <div class="modal-content">
+                <h2>🔄 Senkronizasyon Kodu</h2>
+                <p>Bu kodu diğer cihazda kullanarak verileri senkronize edebilirsin:</p>
+                <p style="color: #6b7280; font-size: 0.9rem;">Kullanıcı sayısı: ${data.users.length}</p>
+                <textarea id="sync-code" readonly style="width: 100%; height: 150px; padding: 1rem; border-radius: 8px; margin: 1rem 0; font-family: monospace; font-size: 0.9rem;">${code}</textarea>
+                <div style="display: flex; gap: 1rem; justify-content: center;">
+                    <button class="btn-primary" onclick="copySyncCode()">📋 Kopyala</button>
+                    <button class="btn-secondary" onclick="this.closest('.modal').remove()">Kapat</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        console.log('Modal eklendi');
+        
+        showToast('Senkronizasyon kodu oluşturuldu!', 'success');
+    } catch (error) {
+        console.error('generateSyncCode hatası:', error);
+        showToast('Kod oluşturulurken hata: ' + error.message, 'error');
+    }
+}
+
+// Global scope'a ekle
+window.copySyncCode = function copySyncCode() {
     const textarea = document.getElementById('sync-code');
     textarea.select();
     document.execCommand('copy');
     showToast('Kod kopyalandı!', 'success');
 }
 
-function applySyncCode() {
+// Global scope'a ekle
+window.applySyncCode = function applySyncCode() {
+    console.log('applySyncCode çağrıldı');
+    
     const code = prompt('Senkronizasyon kodunu yapıştır:');
-    if (!code) return;
+    if (!code) {
+        console.log('Kod girilmedi');
+        return;
+    }
+    
+    console.log('Kod uzunluğu:', code.length);
     
     try {
-        const data = JSON.parse(atob(code));
+        // Türkçe karakter desteği ile decode et
+        const data = JSON.parse(base64ToUtf8(code));
+        console.log('Kod çözüldü, kullanıcı sayısı:', data.users?.length);
         
-        if (confirm('Mevcut veriler güncellenecek. Emin misiniz?')) {
+        if (confirm(`${data.users?.length || 0} kullanıcı aktarılacak. Mevcut veriler güncellenecek. Emin misiniz?`)) {
             const existingUsers = getFromStorage('users') || [];
             const newUsers = data.users || [];
+            
+            console.log('Mevcut kullanıcı:', existingUsers.length);
+            console.log('Yeni kullanıcı:', newUsers.length);
             
             // Kullanıcıları birleştir (ID'ye göre)
             const mergedUsers = [...existingUsers];
@@ -2616,20 +2667,27 @@ function applySyncCode() {
                 const existingIndex = mergedUsers.findIndex(u => u.id === newUser.id);
                 if (existingIndex >= 0) {
                     mergedUsers[existingIndex] = newUser;
+                    console.log('Güncellendi:', newUser.name);
                 } else {
                     mergedUsers.push(newUser);
+                    console.log('Eklendi:', newUser.name);
                 }
             });
             
             saveToStorage('users', mergedUsers);
+            console.log('Toplam kullanıcı:', mergedUsers.length);
+            
             showToast('Veriler senkronize edildi! Sayfa yenileniyor...', 'success');
             
             setTimeout(() => {
                 location.reload();
             }, 2000);
+        } else {
+            console.log('İptal edildi');
         }
     } catch (error) {
-        showToast('Geçersiz kod!', 'error');
+        console.error('applySyncCode hatası:', error);
+        showToast('Geçersiz kod! Hata: ' + error.message, 'error');
     }
 }
 
@@ -2789,9 +2847,9 @@ function showPageWithAnimation(pageId) {
     }
 }
 
-// Klavye Kısayolları
+// Klavye Kısayolları - Minimal (Mobil uyumluluk için)
 document.addEventListener('keydown', function(e) {
-    // ESC tuşu ile modal kapatma
+    // ESC tuşu ile modal kapatma (temel işlevsellik)
     if (e.key === 'Escape') {
         const modal = document.querySelector('.modal.active');
         if (modal) {
@@ -2799,7 +2857,7 @@ document.addEventListener('keydown', function(e) {
         }
     }
     
-    // Enter tuşu ile form gönderme (sadece input'ta iken)
+    // Enter tuşu ile form gönderme (temel işlevsellik)
     if (e.key === 'Enter' && e.target.tagName === 'INPUT') {
         const form = e.target.closest('form');
         if (form) {

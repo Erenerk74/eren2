@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Senkronizasyon Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-box {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px;
+        }
+        button:hover {
+            background: #5568d3;
+        }
+        textarea {
+            width: 100%;
+            height: 150px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .log {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .success { color: green; }
+        .error { color: red; }
+        .info { color: blue; }
+    </style>
+</head>
+<body>
+    <h1>🔄 Senkronizasyon Test</h1>
+    
+    <div class="test-box">
+        <h2>1. Fonksiyon Kontrolü</h2>
+        <button onclick="testFunctions()">Fonksiyonları Test Et</button>
+        <div id="function-test" class="log"></div>
+    </div>
+    
+    <div class="test-box">
+        <h2>2. Kod Oluştur</h2>
+        <button onclick="testGenerateCode()">Kod Oluştur</button>
+        <textarea id="generated-code" readonly placeholder="Kod burada görünecek..."></textarea>
+    </div>
+    
+    <div class="test-box">
+        <h2>3. Kod Uygula</h2>
+        <textarea id="code-input" placeholder="Kodu buraya yapıştır..."></textarea>
+        <button onclick="testApplyCode()">Kodu Uygula</button>
+    </div>
+    
+    <div class="test-box">
+        <h2>4. Log</h2>
+        <div id="log" class="log"></div>
+    </div>
+    
+    <script src="app.js"></script>
+    <script>
+        function log(message, type = 'info') {
+            const logDiv = document.getElementById('log');
+            const time = new Date().toLocaleTimeString();
+            const className = type;
+            logDiv.innerHTML += `<div class="${className}">[${time}] ${message}</div>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+        
+        function testFunctions() {
+            const testDiv = document.getElementById('function-test');
+            testDiv.innerHTML = '';
+            
+            const functions = [
+                'generateSyncCode',
+                'applySyncCode',
+                'copySyncCode',
+                'getFromStorage',
+                'saveToStorage',
+                'showToast'
+            ];
+            
+            functions.forEach(fn => {
+                const exists = typeof window[fn] === 'function';
+                const status = exists ? '✓' : '✗';
+                const className = exists ? 'success' : 'error';
+                testDiv.innerHTML += `<div class="${className}">${status} ${fn}</div>`;
+                log(`${fn}: ${exists ? 'Mevcut' : 'Bulunamadı'}`, exists ? 'success' : 'error');
+            });
+        }
+        
+        function testGenerateCode() {
+            log('Kod oluşturma başladı...', 'info');
+            
+            try {
+                // Test verisi oluştur (Türkçe karakterlerle)
+                const testData = {
+                    users: [
+                        { id: 1, name: 'Ahmet Yılmaz', email: 'ahmet', type: 'student' },
+                        { id: 2, name: 'Ayşe Öztürk', email: 'ayse', type: 'teacher' },
+                        { id: 3, name: 'Mehmet Şahin', email: 'mehmet', type: 'student' }
+                    ],
+                    timestamp: Date.now()
+                };
+                
+                // Türkçe karakter desteği ile encode
+                const code = btoa(unescape(encodeURIComponent(JSON.stringify(testData))));
+                document.getElementById('generated-code').value = code;
+                
+                log('Kod başarıyla oluşturuldu!', 'success');
+                log('Kod uzunluğu: ' + code.length, 'info');
+                log('Kullanıcı sayısı: ' + testData.users.length, 'info');
+                
+                // Gerçek fonksiyonu da test et
+                if (typeof generateSyncCode === 'function') {
+                    log('generateSyncCode fonksiyonu çağrılıyor...', 'info');
+                    generateSyncCode();
+                } else {
+                    log('generateSyncCode fonksiyonu bulunamadı!', 'error');
+                }
+            } catch (error) {
+                log('Hata: ' + error.message, 'error');
+            }
+        }
+        
+        function testApplyCode() {
+            const code = document.getElementById('code-input').value.trim();
+            
+            if (!code) {
+                log('Kod girilmedi!', 'error');
+                return;
+            }
+            
+            log('Kod uygulanıyor...', 'info');
+            log('Kod uzunluğu: ' + code.length, 'info');
+            
+            try {
+                // Türkçe karakter desteği ile decode
+                const data = JSON.parse(decodeURIComponent(escape(atob(code))));
+                log('Kod başarıyla çözüldü!', 'success');
+                log('Kullanıcı sayısı: ' + (data.users?.length || 0), 'info');
+                log('Zaman damgası: ' + new Date(data.timestamp).toLocaleString(), 'info');
+                
+                data.users?.forEach((user, i) => {
+                    log(`${i + 1}. ${user.name} (${user.email}) - ${user.type}`, 'info');
+                });
+                
+                // Gerçek fonksiyonu da test et
+                if (typeof applySyncCode === 'function') {
+                    log('applySyncCode fonksiyonu mevcut', 'success');
+                } else {
+                    log('applySyncCode fonksiyonu bulunamadı!', 'error');
+                }
+            } catch (error) {
+                log('Hata: ' + error.message, 'error');
+            }
+        }
+        
+        // Sayfa yüklendiğinde
+        window.addEventListener('DOMContentLoaded', () => {
+            log('Test sayfası yüklendi', 'success');
+            testFunctions();
+        });
+    </script>
+</body>
+</html>

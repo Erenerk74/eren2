@@ -127,7 +127,7 @@ function checkComboBonus() {
     
     const combo = currentUser.dailyCombo;
     
-    // Combo bonusu
+    // Combo bonusu (sessizce ver, bildirim gösterme)
     if (combo >= 3) {
         const bonusXP = combo * 10;
         const bonusCoins = combo * 2;
@@ -135,7 +135,8 @@ function checkComboBonus() {
         currentUser.xp = (currentUser.xp || 0) + bonusXP;
         currentUser.coins = (currentUser.coins || 0) + bonusCoins;
         
-        showComboNotification(combo, bonusXP, bonusCoins);
+        // Bildirim gösterme, sadece XP ver
+        // showComboNotification(combo, bonusXP, bonusCoins);
     }
     
     saveToStorage('currentUser', currentUser);

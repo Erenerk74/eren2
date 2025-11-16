@@ -106,9 +106,9 @@ function trackActivity() {
     inactivityWarningShown = false;
 }
 
-// Mouse ve keyboard aktivitelerini takip et
+// Mouse ve touch aktivitelerini takip et (mobil uyumlu)
 document.addEventListener('mousemove', trackActivity);
-document.addEventListener('keydown', trackActivity);
+document.addEventListener('touchstart', trackActivity); // Mobil için
 document.addEventListener('click', trackActivity);
 document.addEventListener('scroll', trackActivity);
 
