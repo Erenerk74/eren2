@@ -1,4 +1,6 @@
 // KararLab - Novaşehir Simülatörü
+console.log('app.js yuklendi');
+
 // Global State
 let currentUser = null;
 let gameState = {
@@ -11,7 +13,10 @@ let gameState = {
         carbon: 'Yüksek',
         quality: 'Orta',
         economy: 'Büyüyen'
-    }
+    },
+    happiness: 50, // Halk mutluluğu (0-100)
+    support: 50, // Belediye başkanı desteği (0-100)
+    usedScenarios: [] // Kullanılan senaryolar
 };
 
 // LocalStorage için yardımcı fonksiyonlar
@@ -26,6 +31,7 @@ function getFromStorage(key) {
 
 // Sayfa geçişleri
 function showPage(pageId) {
+    console.log('showPage cagrildi:', pageId);
     document.querySelectorAll('.page').forEach(page => {
         page.classList.remove('active');
     });
@@ -33,14 +39,17 @@ function showPage(pageId) {
 }
 
 function showLanding() {
+    console.log('showLanding cagrildi');
     showPage('landing-page');
 }
 
 function showLogin() {
+    console.log('showLogin cagrildi');
     showPage('login-page');
 }
 
 function showRegister() {
+    console.log('showRegister cagrildi');
     showPage('register-page');
 }
 
@@ -98,12 +107,17 @@ function handleLogin(event) {
 function handleRegister(event) {
     event.preventDefault();
     
-    const name = document.getElementById('reg-name').value;
+    const name = document.getElementById('reg-name').value.trim();
     const username = document.getElementById('reg-email').value.trim();
     const password = document.getElementById('reg-password').value;
     const type = document.getElementById('reg-type').value;
     
-    // Kullanıcı adı kontrolü
+    // Validasyon
+    if (name.length < 3) {
+        showToast('Ad Soyad en az 3 karakter olmalıdır!', 'error');
+        return;
+    }
+    
     if (username.length < 3) {
         showToast('Kullanıcı adı en az 3 karakter olmalıdır!', 'error');
         return;
@@ -111,6 +125,16 @@ function handleRegister(event) {
     
     if (!/^[a-zA-Z0-9_]+$/.test(username)) {
         showToast('Kullanıcı adı sadece harf, rakam ve alt çizgi içerebilir!', 'error');
+        return;
+    }
+    
+    if (password.length < 6) {
+        showToast('Şifre en az 6 karakter olmalıdır!', 'error');
+        return;
+    }
+    
+    if (!type) {
+        showToast('Lütfen kullanıcı tipi seçin!', 'error');
         return;
     }
     
@@ -128,7 +152,10 @@ function handleRegister(event) {
         password,
         type,
         scenarios: [],
-        badges: []
+        badges: [],
+        createdAt: new Date().toISOString(),
+        level: 1,
+        xp: 0
     };
     
     if (type === 'teacher') {
@@ -143,11 +170,15 @@ function handleRegister(event) {
     currentUser = newUser;
     saveToStorage('currentUser', newUser);
     
-    if (type === 'student') {
-        loadStudentPanel();
-    } else {
-        loadTeacherPanel();
-    }
+    showToast('Hoş geldiniz, ' + name + '! 🎉', 'success');
+    
+    setTimeout(() => {
+        if (type === 'student') {
+            loadStudentPanel();
+        } else {
+            loadTeacherPanel();
+        }
+    }, 1000);
 }
 
 // Çıkış
@@ -166,6 +197,23 @@ function loadStudentPanel() {
     
     loadPastReports();
     loadStudentClassInfo();
+    
+    // XP ve seviye gösterimini güncelle
+    if (typeof updateLevelDisplay === 'function') {
+        updateLevelDisplay();
+    }
+    
+    // Günlük görevleri başlat
+    if (typeof initDailyQuests === 'function') {
+        initDailyQuests();
+        if (typeof updateQuestsDisplay === 'function') {
+            updateQuestsDisplay();
+        }
+        // Günlük bonusu göster
+        if (typeof showDailyBonus === 'function') {
+            showDailyBonus();
+        }
+    }
 }
 
 function loadPastReports() {
@@ -261,6 +309,468 @@ function startDemo() {
     startScenario('basic');
 }
 
+// Dinamik Senaryolar
+const scenarioPool = {
+    transport: [
+        {
+            id: 'transport_1',
+            title: 'Ulaşım Krizi',
+            desc: 'Şehirde trafik felç noktasında. Vatandaşlar işe geç kalıyor, stres artıyor.',
+            choices: [
+                {
+                    id: 'A',
+                    title: 'Otopark ve Yol Genişletme',
+                    desc: 'Daha fazla köprü, kavşak ve otopark. Kısa vadede trafik rahatlar.',
+                    effects: { traffic: 'Orta', air: 'Orta-', happiness: +5, support: +10 }
+                },
+                {
+                    id: 'B',
+                    title: 'Toplu Taşıma Devrimi',
+                    desc: 'Metro, tramvay, bisiklet yolları. İlk yıllar şantiye var.',
+                    effects: { traffic: 'Orta', air: 'Orta+', quality: 'Orta+', happiness: -5, support: -5 }
+                },
+                {
+                    id: 'C',
+                    title: 'Karma Geçiş Planı',
+                    desc: 'Hem yol iyileştirme hem toplu taşıma. Dengeli yaklaşım.',
+                    effects: { traffic: 'Orta-Yüksek', air: 'Orta', happiness: +2, support: +5 }
+                }
+            ]
+        },
+        {
+            id: 'transport_2',
+            title: 'Bisiklet Yolu Tartışması',
+            desc: 'Merkez caddelerde bisiklet yolu yapılması öneriliyor. Esnaflar karşı çıkıyor.',
+            choices: [
+                {
+                    id: 'A',
+                    title: 'Bisiklet Yollarını Yap',
+                    desc: 'Çevre dostu ulaşım desteklenir. Esnaf rahatsız olur.',
+                    effects: { traffic: 'Orta', air: 'İyi', happiness: +10, support: -5 }
+                },
+                {
+                    id: 'B',
+                    title: 'Sadece Yan Sokaklarda',
+                    desc: 'Ana caddelere dokunma, yan sokaklarda bisiklet yolu.',
+                    effects: { traffic: 'Yüksek', air: 'Orta', happiness: +3, support: +5 }
+                },
+                {
+                    id: 'C',
+                    title: 'Projeyi İptal Et',
+                    desc: 'Esnafı dinle, bisiklet yolu yapma.',
+                    effects: { traffic: 'Yüksek', air: 'Orta-', happiness: -10, support: +10 }
+                }
+            ]
+        },
+        {
+            id: 'transport_3',
+            title: 'Elektrikli Otobüs Yatırımı',
+            desc: 'Şehir otobüsleri eskidi. Elektrikli mi, dizel mi alınmalı?',
+            choices: [
+                {
+                    id: 'A',
+                    title: 'Elektrikli Otobüs Filosu',
+                    desc: 'Pahalı ama çevre dostu. Uzun vadede tasarruf.',
+                    effects: { air: 'İyi', carbon: 'Düşük', happiness: +15, support: +5 }
+                },
+                {
+                    id: 'B',
+                    title: 'Dizel Otobüsler',
+                    desc: 'Ucuz ve hızlı çözüm. Hava kirliliği devam eder.',
+                    effects: { air: 'Orta-', carbon: 'Yüksek', happiness: -5, support: +10 }
+                },
+                {
+                    id: 'C',
+                    title: 'Hibrit Çözüm',
+                    desc: 'Yarısı elektrikli, yarısı dizel. Dengeli maliyet.',
+                    effects: { air: 'Orta', carbon: 'Orta', happiness: +5, support: +8 }
+                }
+            ]
+        },
+        {
+            id: 'transport_4',
+            title: 'Otopark Sorunu',
+            desc: 'Merkez mahallede otopark yok. Vatandaşlar park yeri bulamıyor.',
+            choices: [
+                {
+                    id: 'A',
+                    title: 'Katlı Otopark Yap',
+                    desc: 'Modern katlı otopark. Pahalı ama etkili.',
+                    effects: { traffic: 'Orta', happiness: +12, support: +10 }
+                },
+                {
+                    id: 'B',
+                    title: 'Toplu Taşımayı Teşvik Et',
+                    desc: 'Otopark yerine metro ve otobüs yatırımı.',
+                    effects: { traffic: 'Orta', air: 'İyi', happiness: +8, support: +5 }
+                },
+                {
+                    id: 'C',
+                    title: 'Ücretli Park Sistemi',
+                    desc: 'Sokak parkları ücretli olsun. Gelir sağlar.',
+                    effects: { economy: 'Güçlü', happiness: -8, support: -5 }
+                }
+            ]
+        },
+        {
+            id: 'transport_5',
+            title: 'Hız Limiti Tartışması',
+            desc: 'Ana caddelerde hız limiti 50\'den 30\'a düşürülsün mü?',
+            choices: [
+                {
+                    id: 'A',
+                    title: 'Hız Limitini Düşür',
+                    desc: 'Güvenlik artar, trafik kazaları azalır.',
+                    effects: { quality: 'İyi', happiness: +10, support: +8 }
+                },
+                {
+                    id: 'B',
+                    title: 'Sadece Okul Bölgelerinde',
+                    desc: 'Çocukların olduğu yerlerde düşür.',
+                    effects: { quality: 'Orta+', happiness: +5, support: +5 }
+                },
+                {
+                    id: 'C',
+                    title: 'Değiştirme',
+                    desc: 'Mevcut sistem yeterli.',
+                    effects: { happiness: -5, support: +3 }
+                }
+            ]
+        }
+    ],
+    environment: [
+        {
+            id: 'env_1',
+            title: 'Yeşil Alan Krizi',
+            desc: 'Artan nüfus için konut gerekli. Ama yeşil alanlar çok az.',
+            choices: [
+                {
+                    id: 'A',
+                    title: 'Parkları İmara Aç',
+                    desc: 'Konut sıkıntısı çözülür, yeşil alan azalır.',
+                    effects: { green: '%5', air: 'Düşük', quality: 'Orta-', happiness: -15, support: +5 }
+                },
+                {
+                    id: 'B',
+                    title: 'Dikey Mimari',
+                    desc: 'Yüksek binalar, yeşil alanlar korunur.',
+                    effects: { green: '%12', air: 'İyi', quality: 'Orta+', happiness: +10, support: +5 }
+                },
+                {
+                    id: 'C',
+                    title: 'Kentsel Dönüşüm',
+                    desc: 'Eski binalar yenilenir, alan verimli kullanılır.',
+                    effects: { green: '%9', quality: 'Orta', happiness: +5, support: +8 }
+                }
+            ]
+        },
+        {
+            id: 'env_2',
+            title: 'Ağaç Kesimi Protestosu',
+            desc: 'Yeni yol için 500 ağaç kesilecek. Çevre grupları protesto ediyor.',
+            choices: [
+                {
+                    id: 'A',
+                    title: 'Projeyi İptal Et',
+                    desc: 'Ağaçları kurtar, yolu yapma. Halk mutlu, trafik devam.',
+                    effects: { green: '%10', air: 'İyi', traffic: 'Yüksek', happiness: +20, support: -10 }
+                },
+                {
+                    id: 'B',
+                    title: 'Yolu Yap, Ağaç Dik',
+                    desc: 'Yolu yap ama başka yere 1000 ağaç dik.',
+                    effects: { green: '%8', air: 'Orta', traffic: 'Orta', happiness: +5, support: +10 }
+                },
+                {
+                    id: 'C',
+                    title: 'Alternatif Güzergah',
+                    desc: 'Daha uzun ama ağaçsız güzergah. Maliyet artar.',
+                    effects: { green: '%10', air: 'Orta+', traffic: 'Orta', happiness: +10, support: +5 }
+                }
+            ]
+        },
+        {
+            id: 'env_3',
+            title: 'Çöp Krizi',
+            desc: 'Şehir çöpte boğuluyor. Geri dönüşüm oranı %5. Ne yapmalı?',
+            choices: [
+                {
+                    id: 'A',
+                    title: 'Geri Dönüşüm Devrimi',
+                    desc: 'Kapsamlı geri dönüşüm sistemi. Pahalı ama etkili.',
+                    effects: { quality: 'İyi', carbon: 'Düşük', happiness: +15, support: +10 }
+                },
+                {
+                    id: 'B',
+                    title: 'Çöp Yakma Tesisi',
+                    desc: 'Çöpten enerji üret. Hava kirliliği riski var.',
+                    effects: { quality: 'Orta', carbon: 'Orta', air: 'Orta-', happiness: -5, support: +5 }
+                },
+                {
+                    id: 'C',
+                    title: 'Sadece Bilinçlendirme',
+                    desc: 'Kampanyalar düzenle, büyük yatırım yapma.',
+                    effects: { quality: 'Orta-', happiness: +2, support: +8 }
+                }
+            ]
+        },
+        {
+            id: 'env_4',
+            title: 'Nehir Kirliliği',
+            desc: 'Şehir nehri kirli ve kokmuş durumda. Temizlik gerekli.',
+            choices: [
+                {
+                    id: 'A',
+                    title: 'Kapsamlı Temizlik',
+                    desc: 'Nehir tamamen temizlensin, fabrikalar denetlensin.',
+                    effects: { quality: 'İyi', air: 'İyi', happiness: +20, support: +15 }
+                },
+                {
+                    id: 'B',
+                    title: 'Kısmi Temizlik',
+                    desc: 'Sadece merkez bölge temizlensin.',
+                    effects: { quality: 'Orta+', happiness: +10, support: +8 }
+                },
+                {
+                    id: 'C',
+                    title: 'Erteleme',
+                    desc: 'Bütçe yok, sonra hallederiz.',
+                    effects: { economy: 'Güçlü', happiness: -15, support: -12 }
+                }
+            ]
+        },
+        {
+            id: 'env_5',
+            title: 'Plastik Poşet Yasağı',
+            desc: 'Marketlerde plastik poşet yasaklansın mı?',
+            choices: [
+                {
+                    id: 'A',
+                    title: 'Tam Yasak',
+                    desc: 'Tüm plastik poşetler yasaklansın.',
+                    effects: { carbon: 'Düşük', quality: 'İyi', happiness: +15, support: +10 }
+                },
+                {
+                    id: 'B',
+                    title: 'Ücretli Poşet',
+                    desc: 'Plastik poşet ücretli olsun.',
+                    effects: { carbon: 'Orta', happiness: +8, support: +8 }
+                },
+                {
+                    id: 'C',
+                    title: 'Yasak Yok',
+                    desc: 'Serbest piyasa, müdahale etme.',
+                    effects: { economy: 'Güçlü', happiness: -10, support: +5 }
+                }
+            ]
+        }
+    ],
+    energy: [
+        {
+            id: 'energy_1',
+            title: 'Enerji Tercihi',
+            desc: 'Şehrin enerji ihtiyacı artıyor. Hangi kaynağı seçersin?',
+            choices: [
+                {
+                    id: 'A',
+                    title: 'Fosil Yakıt',
+                    desc: 'Ucuz ve hızlı. Karbon emisyonu yüksek.',
+                    effects: { carbon: 'Çok Yüksek', air: 'Düşük', economy: 'Güçlü', happiness: -10, support: +15 }
+                },
+                {
+                    id: 'B',
+                    title: 'Yenilenebilir Enerji',
+                    desc: 'Güneş ve rüzgar. Pahalı ama temiz.',
+                    effects: { carbon: 'Düşük', air: 'İyi', economy: 'Orta', happiness: +20, support: +5 }
+                },
+                {
+                    id: 'C',
+                    title: 'Karma Enerji',
+                    desc: 'Yarı fosil, yarı yenilenebilir. Dengeli.',
+                    effects: { carbon: 'Orta', air: 'Orta+', economy: 'Büyüyen', happiness: +8, support: +10 }
+                }
+            ]
+        },
+        {
+            id: 'energy_2',
+            title: 'Nükleer Enerji Tartışması',
+            desc: 'Komşu şehir nükleer santral kuruyor. Sizin şehriniz de katılsın mı?',
+            choices: [
+                {
+                    id: 'A',
+                    title: 'Nükleer Santrala Evet',
+                    desc: 'Temiz ve güçlü enerji. Risk var ama verimli.',
+                    effects: { carbon: 'Çok Düşük', economy: 'Güçlü', happiness: -15, support: -10 }
+                },
+                {
+                    id: 'B',
+                    title: 'Kesinlikle Hayır',
+                    desc: 'Güvenlik riski çok yüksek. Alternatif ara.',
+                    effects: { happiness: +10, support: +15 }
+                },
+                {
+                    id: 'C',
+                    title: 'Referanduma Sun',
+                    desc: 'Halkın kararına bırak. Demokratik ama yavaş.',
+                    effects: { happiness: +15, support: +20 }
+                }
+            ]
+        },
+        {
+            id: 'energy_3',
+            title: 'Güneş Paneli Teşviki',
+            desc: 'Evlere güneş paneli kurulması için teşvik verilsin mi?',
+            choices: [
+                {
+                    id: 'A',
+                    title: 'Yüksek Teşvik Ver',
+                    desc: 'Maliyetin %70\'ini karşıla. Hızlı yaygınlaşır.',
+                    effects: { carbon: 'Düşük', air: 'İyi', economy: 'Orta', happiness: +20, support: +10 }
+                },
+                {
+                    id: 'B',
+                    title: 'Düşük Teşvik',
+                    desc: 'Sadece %30 destek. Yavaş ama dengeli.',
+                    effects: { carbon: 'Orta', happiness: +8, support: +8 }
+                },
+                {
+                    id: 'C',
+                    title: 'Teşvik Yok',
+                    desc: 'Bütçeyi koru, vatandaş kendi yapsın.',
+                    effects: { economy: 'Güçlü', happiness: -10, support: +5 }
+                }
+            ]
+        },
+        {
+            id: 'energy_4',
+            title: 'Rüzgar Türbinleri',
+            desc: 'Şehir dışına rüzgar türbinleri kurulsun mu?',
+            choices: [
+                {
+                    id: 'A',
+                    title: 'Büyük Rüzgar Çiftliği',
+                    desc: '50 türbin. Temiz enerji ama pahalı.',
+                    effects: { carbon: 'Çok Düşük', air: 'İyi', happiness: +18, support: +12 }
+                },
+                {
+                    id: 'B',
+                    title: 'Küçük Tesis',
+                    desc: '10 türbin. Dengeli yatırım.',
+                    effects: { carbon: 'Düşük', happiness: +10, support: +8 }
+                },
+                {
+                    id: 'C',
+                    title: 'Kurma',
+                    desc: 'Görüntü kirliliği yaratır, istemiyoruz.',
+                    effects: { happiness: -12, support: -8 }
+                }
+            ]
+        },
+        {
+            id: 'energy_5',
+            title: 'Enerji Tasarrufu Kampanyası',
+            desc: 'Vatandaşları enerji tasarrufuna teşvik edelim mi?',
+            choices: [
+                {
+                    id: 'A',
+                    title: 'Büyük Kampanya',
+                    desc: 'TV, billboard, sosyal medya. Kapsamlı.',
+                    effects: { carbon: 'Düşük', happiness: +15, support: +12 }
+                },
+                {
+                    id: 'B',
+                    title: 'Basit Bilgilendirme',
+                    desc: 'Broşür ve internet. Ekonomik.',
+                    effects: { carbon: 'Orta', happiness: +8, support: +5 }
+                },
+                {
+                    id: 'C',
+                    title: 'Kampanya Yok',
+                    desc: 'Herkes kendi bilir.',
+                    effects: { economy: 'Güçlü', happiness: -5, support: +3 }
+                }
+            ]
+        }
+    ],
+    social: [
+        {
+            id: 'social_1',
+            title: 'Gençlik Merkezi',
+            desc: 'Gençler için spor ve kültür merkezi yapılsın mı?',
+            choices: [
+                {
+                    id: 'A',
+                    title: 'Büyük Merkez Yap',
+                    desc: 'Modern tesis, her şey dahil. Pahalı ama etkili.',
+                    effects: { quality: 'İyi', happiness: +25, support: +15 }
+                },
+                {
+                    id: 'B',
+                    title: 'Küçük Merkez',
+                    desc: 'Temel ihtiyaçları karşılar. Ekonomik.',
+                    effects: { quality: 'Orta+', happiness: +10, support: +8 }
+                },
+                {
+                    id: 'C',
+                    title: 'Yapma',
+                    desc: 'Bütçeyi başka yere harca.',
+                    effects: { economy: 'Güçlü', happiness: -15, support: -10 }
+                }
+            ]
+        },
+        {
+            id: 'social_2',
+            title: 'Ücretsiz Toplu Taşıma',
+            desc: 'Öğrenciler ve yaşlılar için ücretsiz toplu taşıma?',
+            choices: [
+                {
+                    id: 'A',
+                    title: 'Herkese Ücretsiz',
+                    desc: 'Tüm vatandaşlara ücretsiz. Çok pahalı.',
+                    effects: { traffic: 'Düşük', happiness: +30, support: +20, economy: 'Orta' }
+                },
+                {
+                    id: 'B',
+                    title: 'Sadece Öğrenci ve Yaşlı',
+                    desc: 'Hedef kitleye özel. Dengeli maliyet.',
+                    effects: { happiness: +15, support: +12 }
+                },
+                {
+                    id: 'C',
+                    title: 'İndirimli Fiyat',
+                    desc: '%50 indirim. Hem gelir hem destek.',
+                    effects: { happiness: +8, support: +8, economy: 'Büyüyen' }
+                }
+            ]
+        },
+        {
+            id: 'social_3',
+            title: 'Hayvan Barınağı',
+            desc: 'Sokak hayvanları için modern barınak kurulsun mu?',
+            choices: [
+                {
+                    id: 'A',
+                    title: 'Modern Barınak',
+                    desc: 'Veteriner, bakım, sahiplendirme merkezi.',
+                    effects: { quality: 'İyi', happiness: +20, support: +15 }
+                },
+                {
+                    id: 'B',
+                    title: 'Temel Barınak',
+                    desc: 'Sadece barınma ve aşı. Ekonomik.',
+                    effects: { happiness: +10, support: +8 }
+                },
+                {
+                    id: 'C',
+                    title: 'Öncelik Değil',
+                    desc: 'Bütçeyi insanlara harca.',
+                    effects: { economy: 'Güçlü', happiness: -12, support: -8 }
+                }
+            ]
+        }
+    ]
+};
+
 // Senaryo başlat
 function startScenario(type) {
     gameState = {
@@ -273,7 +783,12 @@ function startScenario(type) {
             carbon: 'Yüksek',
             quality: 'Orta',
             economy: 'Büyüyen'
-        }
+        },
+        happiness: 50,
+        support: 50,
+        usedScenarios: [],
+        happinessHistory: [50],
+        supportHistory: [50]
     };
     
     showPage('game-screen');
@@ -307,6 +822,17 @@ function loadTurn0() {
             <p><strong>Ekonomi:</strong> Büyüyen, sanayi + hizmet sektörü</p>
             <p><strong>Ulaşım:</strong> Ağırlıklı özel araç kullanımı</p>
         </div>
+        
+        <div style="background: rgba(251, 191, 36, 0.2); padding: 1.5rem; border-radius: 12px; margin: 2rem 0; border-left: 4px solid #f59e0b;">
+            <h3 style="margin-top: 0; color: var(--text-primary);">💡 İpuçları</h3>
+            <ul style="margin: 0; padding-left: 1.5rem;">
+                <li><strong>Halk Mutluluğu:</strong> Kararlarınız halkı etkiler. Mutlu halk = Başarılı yönetim</li>
+                <li><strong>Başkan Desteği:</strong> %70+ destek ile seçimi kazanırsınız</li>
+                <li><strong>Dengeli Yaklaşım:</strong> Hem çevreyi hem ekonomiyi düşünün</li>
+                <li><strong>Rastgele Olaylar:</strong> Beklenmedik olaylara hazır olun</li>
+            </ul>
+        </div>
+        
         <button class="btn-primary btn-large" onclick="loadTurn1()">Devam Et - Tur 1'e Geç</button>
     `;
     
@@ -316,54 +842,58 @@ function loadTurn0() {
     }, 100);
 }
 
+// Rastgele senaryo seç
+function getRandomScenario(category) {
+    // Bazen farklı kategoriden de senaryo seçebilir
+    let selectedCategory = category;
+    if (Math.random() < 0.2 && scenarioPool.social) { // %20 şans sosyal konu
+        selectedCategory = 'social';
+    }
+    
+    const available = scenarioPool[selectedCategory].filter(s => !gameState.usedScenarios.includes(s.id));
+    if (available.length === 0) {
+        gameState.usedScenarios = [];
+        return scenarioPool[selectedCategory][Math.floor(Math.random() * scenarioPool[selectedCategory].length)];
+    }
+    const scenario = available[Math.floor(Math.random() * available.length)];
+    gameState.usedScenarios.push(scenario.id);
+    return scenario;
+}
+
 // Tur 1 - Ulaşım
 function loadTurn1() {
     gameState.turn = 1;
-    document.getElementById('current-turn').textContent = 'Tur 1 - Ulaşım Politikası';
+    const scenario = getRandomScenario('transport');
+    document.getElementById('current-turn').textContent = 'Tur 1 - ' + scenario.title;
     
     const panel = document.getElementById('game-panel');
     panel.style.opacity = '0';
     
+    // Yükleme animasyonu
+    panel.innerHTML = '<div style="text-align: center; padding: 4rem;"><div class="loading-spinner"></div><p style="margin-top: 1rem; color: var(--text-secondary);">Senaryo yükleniyor...</p></div>';
+    
     setTimeout(() => {
         panel.innerHTML = `
-        <h2>Tur 1 - Ulaşım Kararın</h2>
+        <h2>Tur 1 - ${scenario.title}</h2>
         <p style="font-size: 1.1rem; margin: 1.5rem 0;">
-            Novaşehir'in ulaşımını geleceğe hazırlarken hangi yolu seçersin?
+            ${scenario.desc}
         </p>
         
         <div class="choice-container">
-            <div class="choice-card" onclick="selectChoice(1, 'A')">
-                <h4>A - Otopark ve Yol Genişletme Odaklı Politika</h4>
-                <p>Daha fazla köprü, kavşak ve otopark. Kısa vadede trafik biraz rahatlar. İnsanlar daha çok araba kullanır.</p>
-                <div class="impact-preview">
-                    <strong>Tahmini Kısa Vadeli Etki:</strong><br>
-                    Trafik: Yüksek → Orta<br>
-                    Hava Kalitesi: Orta → Orta- (biraz kötü)<br>
-                    Yaşam Kalitesi: Değişim az
+            ${scenario.choices.map(choice => `
+                <div class="choice-card" onclick="selectChoice(1, '${choice.id}', ${JSON.stringify(choice.effects).replace(/"/g, '&quot;')})">
+                    <h4>${choice.id} - ${choice.title}</h4>
+                    <p>${choice.desc}</p>
+                    <div class="impact-preview">
+                        <strong>Tahmini Etki:</strong><br>
+                        ${choice.effects.traffic ? `Trafik: ${choice.effects.traffic}<br>` : ''}
+                        ${choice.effects.air ? `Hava: ${choice.effects.air}<br>` : ''}
+                        ${choice.effects.quality ? `Yaşam: ${choice.effects.quality}<br>` : ''}
+                        ${choice.effects.happiness ? `Mutluluk: ${choice.effects.happiness > 0 ? '+' : ''}${choice.effects.happiness}%<br>` : ''}
+                        ${choice.effects.support ? `Destek: ${choice.effects.support > 0 ? '+' : ''}${choice.effects.support}%` : ''}
+                    </div>
                 </div>
-            </div>
-            
-            <div class="choice-card" onclick="selectChoice(1, 'B')">
-                <h4>B - Toplu Taşıma Devrimi</h4>
-                <p>Metro, tramvay, otobüs ve bisiklet yollarına büyük yatırım. Özel araçlara merkezde sınırlama. İlk yıllar şantiyeler ve şikâyetler olacak.</p>
-                <div class="impact-preview">
-                    <strong>Tahmini Etki:</strong><br>
-                    Trafik: Yüksek → Orta (kısa) → Düşük (uzun vadeli)<br>
-                    Hava Kalitesi: Orta → İyi<br>
-                    Yaşam Kalitesi: Kısa vadede dalgalı, sonra yüksek
-                </div>
-            </div>
-            
-            <div class="choice-card" onclick="selectChoice(1, 'C')">
-                <h4>C - Karma, Yumuşak Geçiş Planı</h4>
-                <p>Hem bazı yollar iyileştirilir, hem toplu taşıma desteklenir. Ne çok radikal, ne çok pasif. Ekonomik ve politik olarak daha az riskli.</p>
-                <div class="impact-preview">
-                    <strong>Tahmini Etki:</strong><br>
-                    Trafik: Yüksek → Orta-Yüksek<br>
-                    Hava Kalitesi: Orta → Biraz iyileşmiş<br>
-                    Yaşam Kalitesi: Dengeli, radikal sıçrama yok
-                </div>
-            </div>
+            `).join('')}
         </div>
     `;
         
@@ -374,39 +904,90 @@ function loadTurn1() {
 
 // Seçim yapma
 let selectedChoice = null;
+let selectedEffects = null;
 
-function selectChoice(turn, choice) {
+function selectChoice(turn, choice, effects) {
     selectedChoice = choice;
+    selectedEffects = effects;
+    
+    // Ses çal
+    playSound('click');
     
     document.querySelectorAll('.choice-card').forEach(card => {
         card.classList.remove('selected');
     });
     event.target.closest('.choice-card').classList.add('selected');
     
+    // Seçim animasyonu
+    event.target.closest('.choice-card').style.transform = 'scale(0.98)';
     setTimeout(() => {
-        confirmChoice(turn, choice);
+        event.target.closest('.choice-card').style.transform = 'scale(1)';
+    }, 100);
+    
+    setTimeout(() => {
+        confirmChoice(turn, choice, effects);
     }, 500);
 }
 
-function confirmChoice(turn, choice) {
-    gameState.decisions.push({ turn, choice });
+function confirmChoice(turn, choice, effects) {
+    // Önceki mutluluğu kaydet
+    gameState.prevHappiness = gameState.happiness;
+    gameState.prevSupport = gameState.support;
+    
+    gameState.decisions.push({ turn, choice, effects });
+    
+    // Etkileri uygula
+    if (effects) {
+        if (effects.traffic) gameState.indicators.traffic = effects.traffic;
+        if (effects.air) gameState.indicators.air = effects.air;
+        if (effects.green) gameState.indicators.green = effects.green;
+        if (effects.carbon) gameState.indicators.carbon = effects.carbon;
+        if (effects.quality) gameState.indicators.quality = effects.quality;
+        if (effects.economy) gameState.indicators.economy = effects.economy;
+        
+        // Mutluluk ve destek güncelle
+        if (effects.happiness) {
+            gameState.happiness = Math.max(0, Math.min(100, gameState.happiness + effects.happiness));
+        }
+        if (effects.support) {
+            gameState.support = Math.max(0, Math.min(100, gameState.support + effects.support));
+        }
+    }
+    
+    // Geçmişe ekle
+    if (!gameState.happinessHistory) gameState.happinessHistory = [50];
+    if (!gameState.supportHistory) gameState.supportHistory = [50];
+    
+    gameState.happinessHistory.push(gameState.happiness);
+    gameState.supportHistory.push(gameState.support);
+    
+    // Grafik butonlarını göster
+    const chartButtons = document.getElementById('chart-buttons');
+    if (chartButtons && gameState.turn > 0) {
+        chartButtons.style.display = 'block';
+    }
+    
+    updateIndicators();
     
     // XP kazan
     if (typeof addXP === 'function') {
         addXP(30);
     }
     
+    // Başarımları kontrol et
+    checkGameAchievements();
+    
+    // Ses çal
+    playSound('click');
+    
     if (turn === 1) {
-        updateIndicatorsAfterTurn1(choice);
         showTurnSummary(1, choice, () => {
-            // Rastgele olay tetikle
             if (typeof triggerRandomEvent === 'function') {
                 triggerRandomEvent();
             }
             loadTurn2();
         });
     } else if (turn === 2) {
-        updateIndicatorsAfterTurn2(choice);
         showTurnSummary(2, choice, () => {
             if (typeof triggerRandomEvent === 'function') {
                 triggerRandomEvent();
@@ -414,58 +995,123 @@ function confirmChoice(turn, choice) {
             loadTurn3();
         });
     } else if (turn === 3) {
-        updateIndicatorsAfterTurn3(choice);
         showFinalReport();
     }
 }
 
-function updateIndicatorsAfterTurn1(choice) {
-    if (choice === 'A') {
-        gameState.indicators.traffic = 'Orta';
-        gameState.indicators.air = 'Orta-';
-    } else if (choice === 'B') {
-        gameState.indicators.traffic = 'Orta';
-        gameState.indicators.air = 'Orta+';
-        gameState.indicators.quality = 'Orta+';
-    } else {
-        gameState.indicators.traffic = 'Orta-Yüksek';
-        gameState.indicators.air = 'Orta';
+// Oyun içi başarımları kontrol et
+function checkGameAchievements() {
+    // Yüksek mutluluk
+    if (gameState.happiness >= 80 && !gameState.achievementShown_happiness80) {
+        showAchievementNotification('Mutlu Şehir!', 'Halk mutluluğu %80\'e ulaştı!', '😊');
+        gameState.achievementShown_happiness80 = true;
     }
-    updateIndicators();
+    
+    // Yüksek destek
+    if (gameState.support >= 80 && !gameState.achievementShown_support80) {
+        showAchievementNotification('Güçlü Lider!', 'Halk desteği %80\'e ulaştı!', '👔');
+        gameState.achievementShown_support80 = true;
+    }
+    
+    // Düşük mutluluk uyarısı
+    if (gameState.happiness <= 30 && !gameState.achievementShown_happinessLow) {
+        showAchievementNotification('Dikkat!', 'Halk mutluluğu çok düşük!', '⚠️');
+        gameState.achievementShown_happinessLow = true;
+    }
+    
+    // Tüm B seçenekleri
+    if (gameState.decisions.length === 3) {
+        const allB = gameState.decisions.every(d => d.choice === 'B');
+        if (allB && !gameState.achievementShown_allB) {
+            showAchievementNotification('Çevre Kahramanı!', 'Tüm sürdürülebilir seçenekleri seçtiniz!', '🌱');
+            gameState.achievementShown_allB = true;
+        }
+        
+        // Tüm A seçenekleri
+        const allA = gameState.decisions.every(d => d.choice === 'A');
+        if (allA && !gameState.achievementShown_allA) {
+            showAchievementNotification('Ekonomi Uzmanı!', 'Tüm ekonomik seçenekleri seçtiniz!', '💰');
+            gameState.achievementShown_allA = true;
+        }
+        
+        // Tüm C seçenekleri
+        const allC = gameState.decisions.every(d => d.choice === 'C');
+        if (allC && !gameState.achievementShown_allC) {
+            showAchievementNotification('Dengeci!', 'Tüm dengeli seçenekleri seçtiniz!', '⚖️');
+            gameState.achievementShown_allC = true;
+        }
+        
+        // Karma seçenekler
+        const hasA = gameState.decisions.some(d => d.choice === 'A');
+        const hasB = gameState.decisions.some(d => d.choice === 'B');
+        const hasC = gameState.decisions.some(d => d.choice === 'C');
+        if (hasA && hasB && hasC && !gameState.achievementShown_mixed) {
+            showAchievementNotification('Stratejist!', 'Her seçenek türünden kullandınız!', '🎯');
+            gameState.achievementShown_mixed = true;
+        }
+    }
+    
+    // Mutluluk artışı
+    if (gameState.prevHappiness && gameState.happiness > gameState.prevHappiness + 15 && !gameState.achievementShown_happinessBoost) {
+        showAchievementNotification('Popüler Karar!', 'Mutluluk +15 arttı!', '📈');
+        gameState.achievementShown_happinessBoost = true;
+    }
+    
+    // Destek artışı
+    if (gameState.prevSupport && gameState.support > gameState.prevSupport + 15 && !gameState.achievementShown_supportBoost) {
+        showAchievementNotification('Güven Tazelendi!', 'Destek +15 arttı!', '📈');
+        gameState.achievementShown_supportBoost = true;
+    }
+    
+    // Otomatik kaydet
+    autoSaveGame();
 }
 
-function updateIndicatorsAfterTurn2(choice) {
-    if (choice === 'A') {
-        gameState.indicators.green = '%5';
-        gameState.indicators.air = gameState.indicators.air === 'Orta+' ? 'Orta' : 'Düşük';
-        gameState.indicators.quality = 'Orta-';
-    } else if (choice === 'B') {
-        gameState.indicators.green = '%12';
-        gameState.indicators.air = gameState.indicators.air === 'Orta+' ? 'İyi' : 'Orta+';
-        gameState.indicators.quality = 'Orta+';
-    } else {
-        gameState.indicators.green = '%9';
-        gameState.indicators.quality = 'Orta';
+// Otomatik kayıt
+function autoSaveGame() {
+    if (!currentUser || currentUser.type === 'demo') return;
+    
+    try {
+        const saveData = {
+            gameState: gameState,
+            timestamp: Date.now(),
+            userId: currentUser.id
+        };
+        
+        localStorage.setItem('autoSave_' + currentUser.id, JSON.stringify(saveData));
+    } catch (e) {
+        console.warn('Otomatik kayıt başarısız:', e);
     }
-    updateIndicators();
 }
 
-function updateIndicatorsAfterTurn3(choice) {
-    if (choice === 'A') {
-        gameState.indicators.carbon = 'Çok Yüksek';
-        gameState.indicators.air = 'Düşük';
-        gameState.indicators.economy = 'Güçlü';
-    } else if (choice === 'B') {
-        gameState.indicators.carbon = 'Düşük';
-        gameState.indicators.air = 'İyi';
-        gameState.indicators.economy = 'Orta';
-    } else {
-        gameState.indicators.carbon = 'Orta';
-        gameState.indicators.air = gameState.indicators.air === 'İyi' ? 'İyi' : 'Orta+';
-        gameState.indicators.economy = 'Büyüyen';
+// Otomatik kaydı yükle
+function loadAutoSave() {
+    if (!currentUser || currentUser.type === 'demo') return null;
+    
+    try {
+        const saveData = localStorage.getItem('autoSave_' + currentUser.id);
+        if (saveData) {
+            return JSON.parse(saveData);
+        }
+    } catch (e) {
+        console.warn('Otomatik kayıt yüklenemedi:', e);
     }
-    updateIndicators();
+    
+    return null;
 }
+
+// Otomatik kaydı temizle
+function clearAutoSave() {
+    if (!currentUser || currentUser.type === 'demo') return;
+    
+    try {
+        localStorage.removeItem('autoSave_' + currentUser.id);
+    } catch (e) {
+        console.warn('Otomatik kayıt temizlenemedi:', e);
+    }
+}
+
+// Eski fonksiyonlar kaldırıldı - Artık dinamik sistem kullanılıyor
 
 function updateIndicators() {
     document.getElementById('ind-air').textContent = gameState.indicators.air;
@@ -474,176 +1120,253 @@ function updateIndicators() {
     document.getElementById('ind-carbon').textContent = gameState.indicators.carbon;
     document.getElementById('ind-quality').textContent = gameState.indicators.quality;
     document.getElementById('ind-economy').textContent = gameState.indicators.economy;
+    
+    // Yeni göstergeler
+    if (document.getElementById('ind-happiness')) {
+        const prevHappiness = gameState.prevHappiness || 50;
+        const currentHappiness = gameState.happiness;
+        const change = currentHappiness - prevHappiness;
+        
+        document.getElementById('ind-happiness').textContent = '%' + Math.round(currentHappiness);
+        const happinessBar = document.getElementById('happiness-bar');
+        if (happinessBar) {
+            happinessBar.style.width = currentHappiness + '%';
+            happinessBar.style.background = currentHappiness > 70 ? '#10b981' : 
+                                           currentHappiness > 40 ? '#f59e0b' : '#ef4444';
+        }
+        
+        // Trend göster
+        const trendEl = document.getElementById('happiness-trend');
+        if (trendEl && gameState.turn > 0) {
+            if (change > 0) {
+                trendEl.textContent = `↗️ +${Math.round(change)}% (Artış)`;
+                trendEl.style.color = '#10b981';
+            } else if (change < 0) {
+                trendEl.textContent = `↘️ ${Math.round(change)}% (Düşüş)`;
+                trendEl.style.color = '#ef4444';
+            } else {
+                trendEl.textContent = '→ Değişim yok';
+                trendEl.style.color = '#6b7280';
+            }
+        }
+    }
+    
+    if (document.getElementById('ind-support')) {
+        document.getElementById('ind-support').textContent = '%' + Math.round(gameState.support);
+        const supportBar = document.getElementById('support-bar');
+        if (supportBar) {
+            supportBar.style.width = gameState.support + '%';
+            supportBar.style.background = gameState.support > 70 ? '#10b981' : 
+                                         gameState.support > 40 ? '#f59e0b' : '#ef4444';
+        }
+    }
+    
+    // Karar geçmişini güncelle
+    updateDecisionHistory();
+}
+
+// Karar geçmişini göster
+function updateDecisionHistory() {
+    const historyList = document.getElementById('history-list');
+    if (!historyList) return;
+    
+    if (gameState.decisions.length === 0) {
+        historyList.innerHTML = '<p style="color: #9ca3af; font-style: italic;">Henüz karar yok</p>';
+        return;
+    }
+    
+    const turNames = ['Ulaşım', 'Çevre', 'Enerji'];
+    historyList.innerHTML = gameState.decisions.map((decision, index) => {
+        const effects = decision.effects || {};
+        const happinessChange = effects.happiness || 0;
+        const icon = happinessChange > 0 ? '😊' : happinessChange < 0 ? '😔' : '😐';
+        
+        return `
+            <div style="padding: 0.5rem; background: #f9fafb; border-radius: 6px; margin-bottom: 0.5rem;">
+                <div style="font-weight: 600; color: var(--primary-color);">
+                    ${icon} Tur ${index + 1}: ${turNames[index] || 'Karar'}
+                </div>
+                <div style="font-size: 0.75rem; color: #6b7280;">
+                    Seçim: ${decision.choice} | 
+                    ${happinessChange > 0 ? '+' : ''}${happinessChange}% mutluluk
+                </div>
+            </div>
+        `;
+    }).join('');
 }
 
 function showTurnSummary(turn, choice, nextCallback) {
-    const choiceNames = {
-        1: {
-            'A': 'Otopark ve Yol Genişletme',
-            'B': 'Toplu Taşıma Devrimi',
-            'C': 'Karma Geçiş Planı'
-        },
-        2: {
-            'A': 'Yeşil Alan Feda Edilir',
-            'B': 'Dikey Mimari ve Yeşil Alan Koruma',
-            'C': 'Kentsel Dönüşüm Odaklı Plan'
-        },
-        3: {
-            'A': 'Fosil Yakıt Ağırlıklı',
-            'B': 'Yenilenebilir Enerji Devrimi',
-            'C': 'Geçiş Planı (Karma)'
-        }
-    };
+    const decision = gameState.decisions[turn - 1];
+    const effects = decision.effects || {};
     
-    const reactions = {
-        1: {
-            'A': 'Araç sahipleri memnun, ancak çevre grupları endişeli.',
-            'B': 'Trafikteki şantiyeler bazı vatandaşların şikayet etmesine neden oldu. Gençler ve öğrenciler bisiklet ve metro yatırımlarını olumlu karşıladı.',
-            'C': 'Dengeli yaklaşım genel olarak kabul gördü.'
-        },
-        2: {
-            'A': 'Evin olması güzel ama çocuklarımın oynayacağı park neredeyse kalmadı.',
-            'B': 'Mahallemizde gökdelenler yükseliyor, kimisi mutlu, kimisi rahatsız.',
-            'C': 'Deprem güvenliği arttı, ancak inşaat gürültüsü rahatsız ediyor.'
-        },
-        3: {
-            'A': 'Enerji ucuz ama hava kirliliği artıyor.',
-            'B': 'Yenilenebilir enerji yatırımları uzun vadede faydalı olacak.',
-            'C': 'Aşamalı geçiş dengeli bir yaklaşım.'
-        }
-    };
+    // Rastgele halk tepkileri
+    const positiveReactions = [
+        '"Sonunda doğru bir karar! Teşekkürler başkanım." - Ahmet, 45',
+        '"Çocuklarımın geleceği için güzel bir adım." - Ayşe, 38',
+        '"Bu kararı destekliyorum, devam edin!" - Mehmet, 52',
+        '"Şehrimiz için iyi olacak, umutluyum." - Zeynep, 29'
+    ];
+    
+    const negativeReactions = [
+        '"Bu karar bizi düşünmüyor, hayal kırıklığı." - Fatma, 41',
+        '"Vaatleriniz nerede? Beklentilerimiz karşılanmadı." - Can, 35',
+        '"Daha iyi yapabilirdiniz, üzgünüm." - Elif, 33',
+        '"Bu şehir için yanlış karar oldu." - Hasan, 48'
+    ];
+    
+    const neutralReactions = [
+        '"Göreceğiz, zaman gösterecek." - Ali, 39',
+        '"Henüz bir şey söylemek erken." - Selin, 31',
+        '"Umarım işe yarar." - Burak, 44',
+        '"Dengeli bir yaklaşım gibi görünüyor." - Deniz, 36'
+    ];
+    
+    let reaction;
+    const happinessChange = effects.happiness || 0;
+    
+    if (happinessChange > 5) {
+        reaction = positiveReactions[Math.floor(Math.random() * positiveReactions.length)];
+    } else if (happinessChange < -5) {
+        reaction = negativeReactions[Math.floor(Math.random() * negativeReactions.length)];
+    } else {
+        reaction = neutralReactions[Math.floor(Math.random() * neutralReactions.length)];
+    }
     
     const panel = document.getElementById('game-panel');
     panel.innerHTML = `
         <div style="text-align: center;">
             <h2>Tur ${turn} Özeti</h2>
+            
+            <!-- Değişimler -->
             <div style="background: #dbeafe; padding: 2rem; border-radius: 12px; margin: 2rem 0; text-align: left;">
-                <h3>Aldığın Karar:</h3>
-                <p style="font-size: 1.2rem; color: var(--primary-color); font-weight: bold;">
-                    ${choiceNames[turn][choice]}
+                <h3>Kararınızın Etkileri:</h3>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem;">
+                    ${effects.happiness ? `
+                        <div style="padding: 0.75rem; background: ${effects.happiness > 0 ? '#d1fae5' : '#fee2e2'}; border-radius: 8px;">
+                            <strong>Mutluluk:</strong> ${effects.happiness > 0 ? '+' : ''}${effects.happiness}%
+                        </div>
+                    ` : ''}
+                    ${effects.support ? `
+                        <div style="padding: 0.75rem; background: ${effects.support > 0 ? '#dbeafe' : '#fee2e2'}; border-radius: 8px;">
+                            <strong>Destek:</strong> ${effects.support > 0 ? '+' : ''}${effects.support}%
+                        </div>
+                    ` : ''}
+                </div>
+                
+                <h3 style="margin-top: 1.5rem;">Halktan Bir Ses:</h3>
+                <p style="font-style: italic; background: #f9fafb; padding: 1rem; border-radius: 8px; margin-top: 0.5rem;">
+                    ${reaction}
                 </p>
                 
-                <h3 style="margin-top: 1.5rem;">Halkın Tepkisi:</h3>
-                <p style="font-style: italic;">"${reactions[turn][choice]}"</p>
+                <div style="margin-top: 1.5rem; padding: 1rem; background: rgba(251, 191, 36, 0.2); border-radius: 8px; border: 2px solid rgba(251, 191, 36, 0.3);">
+                    <strong style="color: var(--text-primary);">📊 Güncel Durum:</strong><br>
+                    Halk Mutluluğu: %${Math.round(gameState.happiness)} | 
+                    Başkan Desteği: %${Math.round(gameState.support)}
+                </div>
             </div>
             
-            <button class="btn-primary btn-large" onclick="nextTurn()">Tur ${turn + 1}'e Geç</button>
+            <button class="btn-primary btn-large" onclick="nextTurn()">
+                ${turn < 3 ? `Tur ${turn + 1}'e Geç` : 'Final Raporunu Gör'}
+            </button>
         </div>
     `;
     
     window.nextTurn = nextCallback;
 }
 
-// Tur 2 - Yeşil Alan
+// Tur 2 - Çevre
 function loadTurn2() {
     gameState.turn = 2;
-    document.getElementById('current-turn').textContent = 'Tur 2 - Yeşil Alan & İmar';
-    
-    const turn1Choice = gameState.decisions[0].choice;
-    const choiceText = turn1Choice === 'A' ? 'Otopark ve Yol Genişletme' : 
-                       turn1Choice === 'B' ? 'Toplu Taşıma Devrimi' : 'Karma Geçiş Planı';
+    const scenario = getRandomScenario('environment');
+    document.getElementById('current-turn').textContent = 'Tur 2 - ' + scenario.title;
     
     const panel = document.getElementById('game-panel');
-    panel.innerHTML = `
+    panel.style.opacity = '0';
+    
+    // Yükleme animasyonu
+    panel.innerHTML = '<div style="text-align: center; padding: 4rem;"><div class="loading-spinner"></div><p style="margin-top: 1rem; color: var(--text-secondary);">Senaryo yükleniyor...</p></div>';
+    panel.style.opacity = '1';
+    
+    setTimeout(() => {
+        panel.innerHTML = `
         <div style="background: #f0f9ff; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem;">
-            <strong>Ulaşım Turunda:</strong> ${choiceText} seçeneğini tercih ettin.
+            <strong>Mevcut Durum:</strong> Mutluluk: %${Math.round(gameState.happiness)} | Destek: %${Math.round(gameState.support)}
         </div>
         
-        <h2>Tur 2 - Yeşil Alan & İmar Kararı</h2>
+        <h2>Tur 2 - ${scenario.title}</h2>
         <p style="font-size: 1.1rem; margin: 1.5rem 0;">
-            Artan nüfus için konut ihtiyacı var. Aynı zamanda yeşil alanlar çok az. Hangi planı uygularsın?
+            ${scenario.desc}
         </p>
         
         <div class="choice-container">
-            <div class="choice-card" onclick="selectChoice(2, 'A')">
-                <h4>A - Yeni Konutlar İçin Yeşil Alan Feda Edilir</h4>
-                <p>Parkların bir kısmı imara açılır. Kira fiyatları biraz düşer, konut sıkıntısı hafifler.</p>
-                <div class="impact-preview">
-                    <strong>Tahmini Etki:</strong><br>
-                    Yeşil Alan: %8 → %5<br>
-                    Hava Kalitesi: Olumsuz etkilenir<br>
-                    Konut: Artış
+            ${scenario.choices.map(choice => `
+                <div class="choice-card" onclick="selectChoice(2, '${choice.id}', ${JSON.stringify(choice.effects).replace(/"/g, '&quot;')})">
+                    <h4>${choice.id} - ${choice.title}</h4>
+                    <p>${choice.desc}</p>
+                    <div class="impact-preview">
+                        <strong>Tahmini Etki:</strong><br>
+                        ${choice.effects.green ? `Yeşil Alan: ${choice.effects.green}<br>` : ''}
+                        ${choice.effects.air ? `Hava: ${choice.effects.air}<br>` : ''}
+                        ${choice.effects.quality ? `Yaşam: ${choice.effects.quality}<br>` : ''}
+                        ${choice.effects.carbon ? `Karbon: ${choice.effects.carbon}<br>` : ''}
+                        ${choice.effects.happiness ? `Mutluluk: ${choice.effects.happiness > 0 ? '+' : ''}${choice.effects.happiness}%<br>` : ''}
+                        ${choice.effects.support ? `Destek: ${choice.effects.support > 0 ? '+' : ''}${choice.effects.support}%` : ''}
+                    </div>
                 </div>
-            </div>
-            
-            <div class="choice-card" onclick="selectChoice(2, 'B')">
-                <h4>B - Dikey Mimari ve Yeşil Alan Koruma</h4>
-                <p>Yatay yayılma yerine çok katlı binalar. Mevcut yeşil alanlar korunur, bazı boş alanlar parka çevrilir.</p>
-                <div class="impact-preview">
-                    <strong>Tahmini Etki:</strong><br>
-                    Yeşil Alan: %8 → %12<br>
-                    Hava Kalitesi: İyileşir<br>
-                    Yaşam Kalitesi: Artar
-                </div>
-            </div>
-            
-            <div class="choice-card" onclick="selectChoice(2, 'C')">
-                <h4>C - Kentsel Dönüşüm Odaklı Plan</h4>
-                <p>Eski, riskli binalar yıkılır, aynı alanda daha verimli yerleşim. Deprem güvenliği artar.</p>
-                <div class="impact-preview">
-                    <strong>Tahmini Etki:</strong><br>
-                    Yeşil Alan: %8 → %9<br>
-                    Güvenlik: Artar<br>
-                    Süreç: Uzun ve meşakkatli
-                </div>
-            </div>
+            `).join('')}
         </div>
     `;
+        
+        panel.style.transition = 'opacity 0.5s ease';
+        panel.style.opacity = '1';
+    }, 300);
 }
 
 // Tur 3 - Enerji
 function loadTurn3() {
     gameState.turn = 3;
-    document.getElementById('current-turn').textContent = 'Tur 3 - Enerji & Atık';
+    const scenario = getRandomScenario('energy');
+    document.getElementById('current-turn').textContent = 'Tur 3 - ' + scenario.title;
     
     const panel = document.getElementById('game-panel');
-    panel.innerHTML = `
+    panel.style.opacity = '0';
+    
+    // Yükleme animasyonu
+    panel.innerHTML = '<div style="text-align: center; padding: 4rem;"><div class="loading-spinner"></div><p style="margin-top: 1rem; color: var(--text-secondary);">Senaryo yükleniyor...</p></div>';
+    panel.style.opacity = '1';
+    
+    setTimeout(() => {
+        panel.innerHTML = `
         <div style="background: #f0f9ff; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem;">
-            <strong>Önceki Kararların:</strong><br>
-            Ulaşım: ${getChoiceName(1, gameState.decisions[0].choice)}<br>
-            İmar: ${getChoiceName(2, gameState.decisions[1].choice)}
+            <strong>Mevcut Durum:</strong> Mutluluk: %${Math.round(gameState.happiness)} | Destek: %${Math.round(gameState.support)}
         </div>
         
-        <h2>Tur 3 - Enerji ve Atık Yönetimi</h2>
+        <h2>Tur 3 - ${scenario.title}</h2>
         <p style="font-size: 1.1rem; margin: 1.5rem 0;">
-            Novaşehir'in enerji ihtiyacı artıyor, çöp miktarı da büyüyor. Nasıl bir yol izlersin?
+            ${scenario.desc}
         </p>
         
         <div class="choice-container">
-            <div class="choice-card" onclick="selectChoice(3, 'A')">
-                <h4>A - Fosil Yakıt Ağırlıklı, Ucuz Enerji</h4>
-                <p>Kömür/doğalgaz ağırlıklı enerji üretimi. Kısa vadede enerji maliyeti düşük.</p>
-                <div class="impact-preview">
-                    <strong>Tahmini Etki:</strong><br>
-                    Karbon Emisyonu: Yüksek → Çok Yüksek<br>
-                    Hava Kalitesi: Kötüleşir<br>
-                    Ekonomi: Güçlü
+            ${scenario.choices.map(choice => `
+                <div class="choice-card" onclick="selectChoice(3, '${choice.id}', ${JSON.stringify(choice.effects).replace(/"/g, '&quot;')})">
+                    <h4>${choice.id} - ${choice.title}</h4>
+                    <p>${choice.desc}</p>
+                    <div class="impact-preview">
+                        <strong>Tahmini Etki:</strong><br>
+                        ${choice.effects.carbon ? `Karbon: ${choice.effects.carbon}<br>` : ''}
+                        ${choice.effects.air ? `Hava: ${choice.effects.air}<br>` : ''}
+                        ${choice.effects.economy ? `Ekonomi: ${choice.effects.economy}<br>` : ''}
+                        ${choice.effects.happiness ? `Mutluluk: ${choice.effects.happiness > 0 ? '+' : ''}${choice.effects.happiness}%<br>` : ''}
+                        ${choice.effects.support ? `Destek: ${choice.effects.support > 0 ? '+' : ''}${choice.effects.support}%` : ''}
+                    </div>
                 </div>
-            </div>
-            
-            <div class="choice-card" onclick="selectChoice(3, 'B')">
-                <h4>B - Yenilenebilir Enerji ve Geri Dönüşüm Atağı</h4>
-                <p>Güneş ve rüzgâr yatırımları. Geri dönüşüm tesisleri, atık ayrıştırma kampanyaları.</p>
-                <div class="impact-preview">
-                    <strong>Tahmini Etki:</strong><br>
-                    Karbon Emisyonu: Yüksek → Düşük<br>
-                    Hava Kalitesi: İyi<br>
-                    Maliyet: Başta yüksek
-                </div>
-            </div>
-            
-            <div class="choice-card" onclick="selectChoice(3, 'C')">
-                <h4>C - Geçiş Planı (Yarı Fosil – Yarı Yenilenebilir)</h4>
-                <p>Mevcut santraller aşamalı olarak azaltılır. Yenilenebilir payı her yıl artar.</p>
-                <div class="impact-preview">
-                    <strong>Tahmini Etki:</strong><br>
-                    Karbon Emisyonu: Yavaşça düşer<br>
-                    Ekonomik Şok: Az<br>
-                    Dengeli yaklaşım
-                </div>
-            </div>
+            `).join('')}
         </div>
     `;
+        
+        panel.style.transition = 'opacity 0.5s ease';
+        panel.style.opacity = '1';
+    }, 300);
 }
 
 function getChoiceName(turn, choice) {
@@ -657,68 +1380,129 @@ function getChoiceName(turn, choice) {
 
 // Final Rapor
 function showFinalReport() {
-    const decisions = gameState.decisions.map(d => d.choice).join('');
-    let finalType, icon, reportText, suggestions;
+    const happiness = gameState.happiness;
+    const support = gameState.support;
     
-    // Ekonomi Odaklı: A ağırlıklı
-    if (decisions.includes('AAA') || decisions.match(/A.*A/)) {
-        finalType = 'Ekonomi Odaklı Şehir';
-        icon = '💰';
-        reportText = `
-            Kısa vadede konut ve enerji maliyetlerini düşürdünüz. Ancak hava kirliliği, 
-            gürültü ve yeşil alan eksikliği uzun vadede sağlık harcamalarını ve sosyal 
-            memnuniyetsizliği artıracak. Şehriniz ekonomik olarak cazip görünse de 
-            sürdürülebilirlik açısından kırmızı alarm veriyor.
-        `;
-        suggestions = `
-            <li>Ulaşım kararınızı B (Toplu Taşıma Devrimi) seçseydiniz, trafik ve hava kalitesi daha dengeli olabilirdi.</li>
-            <li>Yeşil alan kararı olarak B veya C'yi seçseydiniz, ısı adası etkisini azaltıp yaşam kalitesini yükseltebilirdiniz.</li>
-            <li>Yenilenebilir enerji yatırımları uzun vadede hem çevreye hem ekonomiye faydalı olacaktı.</li>
-        `;
+    let finalType, icon, reportText, suggestions;
+    let politicalStatus = '';
+    
+    // Destek oranına göre politik durum
+    if (support >= 70) {
+        politicalStatus = '🎉 Halk sizi destekliyor! Bir sonraki seçimi kazanma şansınız yüksek.';
+    } else if (support >= 50) {
+        politicalStatus = '⚖️ Destek oranınız dengede. Bir sonraki seçim çekişmeli geçecek.';
+    } else if (support >= 30) {
+        politicalStatus = '⚠️ Destek oranınız düşük. Halkın güvenini yeniden kazanmalısınız.';
+    } else {
+        politicalStatus = '❌ Halk sizden memnun değil. Seçimi kaybetme riskiniz çok yüksek!';
     }
-    // Sürdürülebilir: B ağırlıklı
-    else if (decisions.includes('BBB') || decisions.match(/B.*B.*B/)) {
-        finalType = 'Sürdürülebilir Şehir';
+    
+    // Mutluluk ve sürdürülebilirlik dengesi
+    if (happiness >= 70 && (gameState.indicators.air === 'İyi' || gameState.indicators.carbon === 'Düşük')) {
+        finalType = 'Sürdürülebilir ve Mutlu Şehir';
         icon = '🌱';
         reportText = `
-            Uzun vadede daha sağlıklı, çevre dostu ve yaşam kalitesi yüksek bir şehir kurdunuz. 
-            Kısa vadede bazı ekonomik zorluklar ve şantiye süreçleri yaşandı; ancak gelecek 
-            nesiller için güçlü bir temel attınız. Novaşehir, sürdürülebilir şehirler arasında 
-            örnek gösterilmeye aday.
+            Tebrikler! Hem çevreyi korudunuz hem de halkı mutlu ettiniz. Şehriniz sürdürülebilir 
+            bir geleceğe doğru ilerliyor ve vatandaşlar kararlarınızdan memnun. Bu dengeli yaklaşım 
+            uzun vadede şehrinizi örnek bir model haline getirecek.
         `;
         suggestions = `
-            <li>Tebrikler! Cesur ve uzun vadeli kararlar aldınız.</li>
-            <li>Ulaşım, yeşil alan ve enerji kararlarınız birlikte çalışarak ısı adası etkisini önemli ölçüde azalttı.</li>
-            <li>Vatandaş memnuniyeti başlangıçta dalgalı olsa da, 5-10 yıl sonra şehriniz yaşanabilir bir örnek olacak.</li>
+            <li>🎉 Mükemmel! Hem çevre hem de halk mutluluğunu dengeleyebildiniz.</li>
+            <li>💚 Hava kalitesi ve karbon emisyonu hedeflerinize ulaştınız.</li>
+            <li>👏 Halk desteğiniz: %${Math.round(support)} - Başarılı bir yönetim!</li>
         `;
-    }
-    // Dengeci: Karma
-    else {
-        finalType = 'Dengeci Şehir';
+    } else if (happiness >= 60) {
+        finalType = 'Halk Dostu Şehir';
+        icon = '😊';
+        reportText = `
+            Halkın mutluluğunu ön planda tuttunuz. Vatandaşlar kararlarınızdan genel olarak memnun. 
+            Ancak bazı çevresel hedeflerde daha iddialı olabilirdiniz. Kısa vadede başarılı bir 
+            yönetim sergiledini ama uzun vadeli sürdürülebilirlik için daha fazla çaba gerekli.
+        `;
+        suggestions = `
+            <li>👍 Halk mutluluğu yüksek (%${Math.round(happiness)}) - İyi iş çıkardınız!</li>
+            <li>🌍 Çevresel göstergelerde daha cesur adımlar atabilirdiniz.</li>
+            <li>⚖️ Destek oranınız: %${Math.round(support)}</li>
+        `;
+    } else if (happiness < 40) {
+        finalType = 'Zorlu Yönetim';
+        icon = '😔';
+        reportText = `
+            Aldığınız kararlar halkı mutlu edemedi. Vatandaşlar yaşam kalitesinden şikayetçi. 
+            Belki çok radikal değişiklikler yaptınız ya da halkın beklentilerini göz ardı ettiniz. 
+            Bir belediye başkanı olarak halkın sesini dinlemek çok önemli.
+        `;
+        suggestions = `
+            <li>⚠️ Halk mutluluğu düşük (%${Math.round(happiness)}) - Vatandaşları dinleyin.</li>
+            <li>📢 Kararlarınızı halka daha iyi anlatmalısınız.</li>
+            <li>🔄 Destek oranınız: %${Math.round(support)} - İyileştirme gerekli.</li>
+        `;
+    } else {
+        finalType = 'Dengeci Yönetim';
         icon = '⚖️';
         reportText = `
-            Her alanda orta düzey kararlar aldınız. Krizleri büyütmeden yönetmeyi seçtiniz, 
-            radikal dönüşümlere çok girmediniz. Bu sayede şehrinizde büyük bir çöküş yaşanmadı; 
-            ancak sürdürülebilirlik açısından atılması gereken bazı cesur adımları ertelemiş 
-            görünüyorsunuz.
+            Orta yolu buldunuz. Ne çok radikal ne de çok pasif kararlar aldınız. Halk genel olarak 
+            kararlarınızı kabul ediyor ama kimse tam olarak heyecanlanmıyor. Güvenli bir yönetim 
+            sergiledini ama bazen cesur adımlar atmak gerekebilir.
         `;
         suggestions = `
-            <li>Dengeli yaklaşımınız riskleri azalttı ama potansiyel kazanımları da sınırladı.</li>
-            <li>Bazı alanlarda daha cesur kararlar alsaydınız, şehriniz daha sürdürülebilir olabilirdi.</li>
-            <li>Ekonomik istikrar sağladınız ancak çevre hedeflerine tam ulaşamadınız.</li>
+            <li>⚖️ Dengeli bir yaklaşım sergiledini.</li>
+            <li>📊 Halk mutluluğu: %${Math.round(happiness)} - Orta seviye.</li>
+            <li>🎯 Destek oranınız: %${Math.round(support)}</li>
         `;
     }
     
     document.getElementById('current-turn').textContent = 'Final Raporu';
     
+    // Başarım göster
+    if (happiness >= 70 && support >= 70) {
+        showAchievementNotification('Mükemmel Yönetim!', 'Hem halk mutlu hem de destek yüksek!', '🏆');
+        // Konfeti
+        if (typeof createConfetti === 'function') {
+            setTimeout(() => createConfetti(), 2000);
+        }
+    }
+    
+    // Ses çal
+    playSound('success');
+    
     const panel = document.getElementById('game-panel');
-    panel.innerHTML = `
+    panel.style.opacity = '0';
+    
+    // Yükleme
+    panel.innerHTML = '<div style="text-align: center; padding: 4rem;"><div class="loading-spinner"></div><p style="margin-top: 1rem; color: var(--text-secondary);">Rapor hazırlanıyor...</p></div>';
+    panel.style.opacity = '1';
+    
+    setTimeout(() => {
+        panel.style.opacity = '0';
+        setTimeout(() => {
+            panel.innerHTML = `
         <div class="final-report">
             <div class="final-icon">${icon}</div>
             <h2>${finalType}</h2>
             
+            <!-- Politik Durum -->
+            <div style="background: ${support >= 50 ? '#d1fae5' : '#fee2e2'}; padding: 1.5rem; border-radius: 12px; margin: 1.5rem 0;">
+                <h3 style="margin: 0 0 0.5rem 0;">Politik Durum</h3>
+                <p style="margin: 0; font-size: 1.1rem;">${politicalStatus}</p>
+            </div>
+            
+            <!-- Halk Göstergeleri -->
             <div class="indicators-table">
-                <h3>Final Göstergeler</h3>
+                <h3>Halk Göstergeleri</h3>
+                <div class="indicator" style="background: ${happiness >= 70 ? '#d1fae5' : happiness >= 40 ? '#fef3c7' : '#fee2e2'};">
+                    <span>😊 Halk Mutluluğu</span>
+                    <span class="indicator-value">%${Math.round(happiness)}</span>
+                </div>
+                <div class="indicator" style="background: ${support >= 70 ? '#d1fae5' : support >= 40 ? '#fef3c7' : '#fee2e2'};">
+                    <span>👔 Başkan Desteği</span>
+                    <span class="indicator-value">%${Math.round(support)}</span>
+                </div>
+            </div>
+            
+            <!-- Çevresel Göstergeler -->
+            <div class="indicators-table">
+                <h3>Çevresel Göstergeler</h3>
                 <div class="indicator">
                     <span>Hava Kalitesi</span>
                     <span class="indicator-value">${gameState.indicators.air}</span>
@@ -753,15 +1537,110 @@ function showFinalReport() {
                 <ul style="line-height: 2;">
                     ${suggestions}
                 </ul>
+                
+                <h3 style="margin-top: 1.5rem;">Halkın Yorumları</h3>
+                <div style="background: #f9fafb; padding: 1rem; border-radius: 8px; font-style: italic;">
+                    ${getPublicComments(happiness, support)}
+                </div>
             </div>
             
             <div class="report-actions">
-                <button class="btn-primary" onclick="saveScenario('${finalType}')">Raporu Kaydet</button>
-                <button class="btn-secondary" onclick="startScenario('basic')">Tekrar Oyna</button>
-                <button class="btn-secondary" onclick="backToPanel()">Panele Dön</button>
+                <button class="btn-primary" onclick="saveScenario('${finalType}')">💾 Raporu Kaydet</button>
+                <button class="btn-secondary" onclick="showFinalStats()">📊 Detaylı İstatistik</button>
+                <button class="btn-secondary" onclick="startScenario('basic')">🔄 Tekrar Oyna</button>
+                <button class="btn-secondary" onclick="backToPanel()">🏠 Panele Dön</button>
             </div>
         </div>
     `;
+            
+            panel.style.transition = 'opacity 0.5s ease';
+            panel.style.opacity = '1';
+        }, 500);
+    }, 1500);
+}
+
+// Halkın yorumlarını oluştur
+function getPublicComments(happiness, support) {
+    const comments = [];
+    
+    if (happiness >= 70) {
+        comments.push('"Şehrimiz çok güzel oldu, çocuklarım parklarda oynuyor!" - Ayşe, 35');
+        comments.push('"Hava temiz, trafik azaldı. Başkanımıza teşekkürler!" - Mehmet, 42');
+    } else if (happiness >= 50) {
+        comments.push('"Bazı şeyler iyi ama daha fazlası yapılabilirdi." - Zeynep, 28');
+        comments.push('"Henüz tam memnun değilim ama umutluyum." - Ali, 51');
+    } else {
+        comments.push('"Vaatler tutulmadı, hayal kırıklığına uğradım." - Fatma, 38');
+        comments.push('"Şehir daha kötüye gidiyor gibi..." - Can, 29');
+    }
+    
+    if (support >= 70) {
+        comments.push('"Bir sonraki seçimde yine bu başkana oy vereceğim!" - Hasan, 45');
+    } else if (support < 40) {
+        comments.push('"Artık değişiklik zamanı, yeni bir başkan lazım." - Elif, 33');
+    }
+    
+    return comments.map(c => `<p style="margin: 0.5rem 0;">${c}</p>`).join('');
+}
+
+// Final istatistikleri göster
+function showFinalStats() {
+    const modal = document.createElement('div');
+    modal.className = 'modal active';
+    
+    const decisions = gameState.decisions.map((d, i) => {
+        const turNames = ['Ulaşım', 'Çevre', 'Enerji'];
+        return `
+            <div style="padding: 1rem; background: #f9fafb; border-radius: 8px; margin-bottom: 0.5rem;">
+                <strong>Tur ${i + 1} (${turNames[i]}):</strong> Seçim ${d.choice}
+                ${d.effects && d.effects.happiness ? `<br><small>Mutluluk: ${d.effects.happiness > 0 ? '+' : ''}${d.effects.happiness}%</small>` : ''}
+                ${d.effects && d.effects.support ? `<br><small>Destek: ${d.effects.support > 0 ? '+' : ''}${d.effects.support}%</small>` : ''}
+            </div>
+        `;
+    }).join('');
+    
+    modal.innerHTML = `
+        <div class="modal-content stats-modal">
+            <h2>📊 Detaylı Oyun İstatistikleri</h2>
+            
+            <div style="margin: 1.5rem 0;">
+                <h3>Kararlarınız</h3>
+                ${decisions}
+            </div>
+            
+            <div style="margin: 1.5rem 0;">
+                <h3>Mutluluk Grafiği</h3>
+                <canvas id="final-happiness-chart"></canvas>
+            </div>
+            
+            <div style="margin: 1.5rem 0;">
+                <h3>Destek Grafiği</h3>
+                <canvas id="final-support-chart"></canvas>
+            </div>
+            
+            <button class="btn-secondary" onclick="closeModal(event)">Kapat</button>
+        </div>
+    `;
+    document.body.appendChild(modal);
+    
+    // Grafikleri çiz
+    setTimeout(() => {
+        const happinessChart = new SimpleChart('final-happiness-chart', gameState.happinessHistory || [50], {
+            width: 500,
+            height: 150,
+            lineColor: '#10b981',
+            fillColor: 'rgba(16, 185, 129, 0.1)'
+        });
+        happinessChart.draw();
+        
+        const supportChart = new SimpleChart('final-support-chart', gameState.supportHistory || [50], {
+            width: 500,
+            height: 150,
+            lineColor: '#6366f1',
+            fillColor: 'rgba(99, 102, 241, 0.1)'
+        });
+        supportChart.draw();
+    }, 100);
 }
 
 function saveScenario(finalType) {
@@ -788,6 +1667,11 @@ function saveScenario(finalType) {
     saveToStorage('users', users);
     saveToStorage('currentUser', currentUser);
     
+    // Görevleri kontrol et
+    if (typeof checkQuests === 'function') {
+        checkQuests();
+    }
+    
     // XP ve Başarılar
     addXP(100);
     checkAchievement('first_game');
@@ -803,6 +1687,19 @@ function saveScenario(finalType) {
     // Senaryo sayısı kontrolü
     if (currentUser.scenarios.length >= 20) {
         checkAchievement('scenario_master');
+    }
+    
+    // İlerleme takibi
+    if (typeof onScenarioComplete === 'function') {
+        onScenarioComplete(gameState.happiness, gameState.support);
+    }
+    
+    // Rekabetçi maç kontrolü
+    if (window.competitiveMatch && window.competitiveMatch.active) {
+        const playerScore = (gameState.happiness + gameState.support) / 2;
+        if (typeof endCompetitiveMatch === 'function') {
+            endCompetitiveMatch(playerScore);
+        }
     }
     
     showToast('Rapor kaydedildi! +100 XP', 'success');
@@ -1092,10 +1989,20 @@ function loadAdminPanel() {
         }
     });
     
-    document.getElementById('admin-total-users').textContent = users.length;
-    document.getElementById('admin-total-students').textContent = students.length;
-    document.getElementById('admin-total-teachers').textContent = teachers.length;
-    document.getElementById('admin-total-scenarios').textContent = totalScenarios;
+    // Animasyonlu sayaçlar
+    setTimeout(() => {
+        if (typeof animateNumber === 'function') {
+            animateNumber(document.getElementById('admin-total-users'), 0, users.length, 1000);
+            animateNumber(document.getElementById('admin-total-students'), 0, students.length, 1200);
+            animateNumber(document.getElementById('admin-total-teachers'), 0, teachers.length, 1400);
+            animateNumber(document.getElementById('admin-total-scenarios'), 0, totalScenarios, 1600);
+        } else {
+            document.getElementById('admin-total-users').textContent = users.length;
+            document.getElementById('admin-total-students').textContent = students.length;
+            document.getElementById('admin-total-teachers').textContent = teachers.length;
+            document.getElementById('admin-total-scenarios').textContent = totalScenarios;
+        }
+    }, 100);
     
     loadAdminUsersList(users);
 }
@@ -1104,38 +2011,54 @@ function loadAdminUsersList(users) {
     const usersDiv = document.getElementById('admin-users-list');
     
     usersDiv.innerHTML = `
-        <table class="user-table">
-            <thead>
-                <tr>
-                    <th>Ad Soyad</th>
-                    <th>E-posta</th>
-                    <th>Şifre</th>
-                    <th>Tip</th>
-                    <th>Senaryo</th>
-                    <th>Seviye</th>
-                    <th>Kayıt Tarihi</th>
-                    <th>İşlem</th>
-                </tr>
-            </thead>
-            <tbody>
-                ${users.map(user => `
+        <div style="overflow-x: auto;">
+            <table class="user-table">
+                <thead>
                     <tr>
-                        <td>${user.name}</td>
-                        <td>${user.email}</td>
-                        <td><code>${user.password}</code></td>
-                        <td>${user.type === 'student' ? '🎓 Öğrenci' : user.type === 'teacher' ? '👨‍🏫 Öğretmen' : '🔧 Admin'}</td>
-                        <td>${(user.scenarios || []).length}</td>
-                        <td>Lvl ${user.level || 1}</td>
-                        <td>${new Date(user.id).toLocaleDateString('tr-TR')}</td>
-                        <td>
-                            <button class="btn-small btn-secondary" onclick="viewUserDetails(${user.id})">Detay</button>
-                            <button class="btn-small btn-secondary" onclick="deleteUser(${user.id})">Sil</button>
-                        </td>
+                        <th><input type="checkbox" onchange="toggleAllUsers(this)"></th>
+                        <th>Ad Soyad</th>
+                        <th>Kullanıcı Adı</th>
+                        <th>Şifre</th>
+                        <th>Tip</th>
+                        <th>Senaryo</th>
+                        <th>Seviye</th>
+                        <th>Kayıt Tarihi</th>
+                        <th>İşlem</th>
                     </tr>
-                `).join('')}
-            </tbody>
-        </table>
+                </thead>
+                <tbody>
+                    ${users.map(user => `
+                        <tr class="${selectedUsers.includes(user.id) ? 'selected-row' : ''}">
+                            <td><input type="checkbox" ${selectedUsers.includes(user.id) ? 'checked' : ''} onchange="toggleUserSelection(${user.id})"></td>
+                            <td><strong>${user.name}</strong></td>
+                            <td>${user.email}</td>
+                            <td><code>${user.password}</code></td>
+                            <td>${user.type === 'student' ? '🎓 Öğrenci' : user.type === 'teacher' ? '👨‍🏫 Öğretmen' : '🔧 Admin'}</td>
+                            <td><span class="badge-pill">${(user.scenarios || []).length}</span></td>
+                            <td><span class="level-badge">Lvl ${user.level || 1}</span></td>
+                            <td>${new Date(user.id).toLocaleDateString('tr-TR')}</td>
+                            <td>
+                                <button class="btn-small btn-secondary" onclick="viewUserDetails(${user.id})">👁️</button>
+                                <button class="btn-small btn-secondary" onclick="editUser(${user.id})">✏️</button>
+                                <button class="btn-small btn-secondary" onclick="deleteUser(${user.id})">🗑️</button>
+                            </td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        </div>
     `;
+}
+
+function toggleAllUsers(checkbox) {
+    const users = getFromStorage('users') || [];
+    if (checkbox.checked) {
+        selectedUsers = users.map(u => u.id);
+    } else {
+        selectedUsers = [];
+    }
+    updateBulkActionsBar();
+    loadAdminUsersList(users);
 }
 
 function deleteUser(userId) {
@@ -1157,8 +2080,76 @@ function showToast(message, type = 'success') {
     document.body.appendChild(toast);
     
     setTimeout(() => {
-        toast.remove();
+        toast.classList.add('fade-out');
+        setTimeout(() => toast.remove(), 300);
     }, 3000);
+}
+
+// Başarım Bildirimi
+function showAchievementNotification(title, description, icon = '🏆') {
+    const notification = document.createElement('div');
+    notification.className = 'achievement-notification';
+    notification.innerHTML = `
+        <div class="achievement-icon">${icon}</div>
+        <div class="achievement-content">
+            <div class="achievement-title">${title}</div>
+            <div class="achievement-desc">${description}</div>
+        </div>
+    `;
+    document.body.appendChild(notification);
+    
+    // Ses çal
+    playSound('achievement');
+    
+    setTimeout(() => {
+        notification.classList.add('slide-out');
+        setTimeout(() => notification.remove(), 500);
+    }, 4000);
+}
+
+// Basit ses sistemi
+function playSound(type) {
+    if (!window.soundEnabled) return;
+    
+    const sounds = {
+        'click': 1000,
+        'achievement': 1200,
+        'success': 800,
+        'error': 400
+    };
+    
+    const freq = sounds[type] || 800;
+    
+    try {
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        
+        oscillator.frequency.value = freq;
+        oscillator.type = 'sine';
+        
+        gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+        
+        oscillator.start(audioContext.currentTime);
+        oscillator.stop(audioContext.currentTime + 0.1);
+    } catch (e) {
+        // Ses çalmazsa sessizce devam et
+    }
+}
+
+// Ses açma/kapama
+window.soundEnabled = true;
+function toggleGameSound() {
+    window.soundEnabled = !window.soundEnabled;
+    const icon = document.getElementById('sound-icon');
+    if (icon) {
+        icon.textContent = window.soundEnabled ? '🔊' : '🔇';
+    }
+    showToast(window.soundEnabled ? '🔊 Ses açıldı' : '🔇 Ses kapatıldı', 'info');
 }
 
 // Sınıf listesini güncelle
@@ -1519,3 +2510,586 @@ function exportUsersData() {
     
     showToast('Kullanıcı verileri CSV olarak indirildi!', 'success');
 }
+
+
+// Veri Export/Import Sistemi
+function exportAllData() {
+    const data = {
+        users: getFromStorage('users') || [],
+        activities: getFromStorage('activities') || [],
+        comments: getFromStorage('comments') || {},
+        exportDate: new Date().toISOString(),
+        version: '2.5'
+    };
+    
+    const dataStr = JSON.stringify(data, null, 2);
+    const blob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `kararlab_data_${Date.now()}.json`;
+    link.click();
+    
+    showToast('Tüm veriler indirildi!', 'success');
+}
+
+function importData() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    
+    input.onchange = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            try {
+                const data = JSON.parse(event.target.result);
+                
+                if (confirm('Mevcut veriler silinecek ve yeni veriler yüklenecek. Emin misiniz?')) {
+                    saveToStorage('users', data.users || []);
+                    saveToStorage('activities', data.activities || []);
+                    saveToStorage('comments', data.comments || {});
+                    
+                    showToast('Veriler başarıyla yüklendi! Sayfa yenileniyor...', 'success');
+                    
+                    setTimeout(() => {
+                        location.reload();
+                    }, 2000);
+                }
+            } catch (error) {
+                showToast('Dosya okunamadı! Geçerli bir JSON dosyası seçin.', 'error');
+            }
+        };
+        reader.readAsText(file);
+    };
+    
+    input.click();
+}
+
+// Veri senkronizasyon kodu oluştur
+function generateSyncCode() {
+    const data = {
+        users: getFromStorage('users') || [],
+        timestamp: Date.now()
+    };
+    
+    const code = btoa(JSON.stringify(data));
+    
+    const modal = document.createElement('div');
+    modal.className = 'modal active';
+    modal.innerHTML = `
+        <div class="modal-content">
+            <h2>🔄 Senkronizasyon Kodu</h2>
+            <p>Bu kodu diğer cihazda kullanarak verileri senkronize edebilirsin:</p>
+            <textarea id="sync-code" readonly style="width: 100%; height: 150px; padding: 1rem; border-radius: 8px; margin: 1rem 0;">${code}</textarea>
+            <button class="btn-primary" onclick="copySyncCode()">📋 Kopyala</button>
+            <button class="btn-secondary" onclick="closeModal(event)">Kapat</button>
+        </div>
+    `;
+    document.body.appendChild(modal);
+}
+
+function copySyncCode() {
+    const textarea = document.getElementById('sync-code');
+    textarea.select();
+    document.execCommand('copy');
+    showToast('Kod kopyalandı!', 'success');
+}
+
+function applySyncCode() {
+    const code = prompt('Senkronizasyon kodunu yapıştır:');
+    if (!code) return;
+    
+    try {
+        const data = JSON.parse(atob(code));
+        
+        if (confirm('Mevcut veriler güncellenecek. Emin misiniz?')) {
+            const existingUsers = getFromStorage('users') || [];
+            const newUsers = data.users || [];
+            
+            // Kullanıcıları birleştir (ID'ye göre)
+            const mergedUsers = [...existingUsers];
+            newUsers.forEach(newUser => {
+                const existingIndex = mergedUsers.findIndex(u => u.id === newUser.id);
+                if (existingIndex >= 0) {
+                    mergedUsers[existingIndex] = newUser;
+                } else {
+                    mergedUsers.push(newUser);
+                }
+            });
+            
+            saveToStorage('users', mergedUsers);
+            showToast('Veriler senkronize edildi! Sayfa yenileniyor...', 'success');
+            
+            setTimeout(() => {
+                location.reload();
+            }, 2000);
+        }
+    } catch (error) {
+        showToast('Geçersiz kod!', 'error');
+    }
+}
+
+
+// Şifre Görünürlüğü Toggle
+function togglePassword(inputId) {
+    const input = document.getElementById(inputId);
+    const button = input.nextElementSibling;
+    
+    if (input.type === 'password') {
+        input.type = 'text';
+        button.textContent = '🙈';
+    } else {
+        input.type = 'password';
+        button.textContent = '👁️';
+    }
+}
+
+// Gizlilik Politikası Modal
+function showPrivacyPolicy() {
+    const modal = document.createElement('div');
+    modal.className = 'modal active';
+    modal.innerHTML = `
+        <div class="modal-content" style="max-width: 600px;">
+            <h3>Gizlilik Politikası ve KVKK</h3>
+            <div style="max-height: 400px; overflow-y: auto; padding: 1rem; text-align: left;">
+                <h4>1. Veri Toplama</h4>
+                <p>KararLab, eğitim amaçlı bir simülasyon platformudur. Topladığımız veriler:</p>
+                <ul>
+                    <li>Ad Soyad</li>
+                    <li>Kullanıcı adı</li>
+                    <li>Şifre (şifrelenmiş)</li>
+                    <li>Kullanıcı tipi (Öğrenci/Öğretmen)</li>
+                    <li>Oyun istatistikleri</li>
+                </ul>
+                
+                <h4>2. Veri Kullanımı</h4>
+                <p>Verileriniz sadece:</p>
+                <ul>
+                    <li>Hesap yönetimi</li>
+                    <li>Oyun ilerlemesi takibi</li>
+                    <li>Eğitim raporları oluşturma</li>
+                </ul>
+                <p>amaçlarıyla kullanılır.</p>
+                
+                <h4>3. Veri Güvenliği</h4>
+                <p>Verileriniz tarayıcınızın yerel depolama alanında (LocalStorage) saklanır. Üçüncü taraflarla paylaşılmaz.</p>
+                
+                <h4>4. Haklarınız</h4>
+                <p>KVKK kapsamında:</p>
+                <ul>
+                    <li>Verilerinize erişim hakkı</li>
+                    <li>Verilerin silinmesini talep etme hakkı</li>
+                    <li>Verilerin düzeltilmesini talep etme hakkı</li>
+                </ul>
+                
+                <h4>5. İletişim</h4>
+                <p>Sorularınız için: info@kararlab.com</p>
+            </div>
+            <div class="modal-actions">
+                <button class="btn-primary" onclick="closePrivacyModal()">Anladım</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+}
+
+function closePrivacyModal() {
+    const modal = document.querySelector('.modal');
+    if (modal) {
+        modal.remove();
+    }
+}
+
+// Form Validation İyileştirmeleri
+function validateRegisterForm() {
+    const name = document.getElementById('reg-name').value.trim();
+    const email = document.getElementById('reg-email').value.trim();
+    const password = document.getElementById('reg-password').value;
+    const type = document.getElementById('reg-type').value;
+    
+    if (name.length < 3) {
+        showToast('Ad Soyad en az 3 karakter olmalıdır', 'error');
+        return false;
+    }
+    
+    if (email.length < 3) {
+        showToast('Kullanıcı adı en az 3 karakter olmalıdır', 'error');
+        return false;
+    }
+    
+    if (password.length < 6) {
+        showToast('Şifre en az 6 karakter olmalıdır', 'error');
+        return false;
+    }
+    
+    if (!type) {
+        showToast('Lütfen kullanıcı tipi seçin', 'error');
+        return false;
+    }
+    
+    // Kullanıcı adı benzersizliği kontrolü
+    const users = getFromStorage('users') || [];
+    if (users.find(u => u.email === email)) {
+        showToast('Bu kullanıcı adı zaten kullanılıyor', 'error');
+        return false;
+    }
+    
+    return true;
+}
+
+// Toast Notification Sistemi İyileştirmesi
+function showToast(message, type = 'success') {
+    // Eski toast'ları temizle
+    const oldToasts = document.querySelectorAll('.toast');
+    oldToasts.forEach(t => t.remove());
+    
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    
+    const icon = type === 'success' ? '✅' : type === 'error' ? '❌' : 'ℹ️';
+    
+    toast.innerHTML = `
+        <span class="toast-icon">${icon}</span>
+        <span class="toast-message">${message}</span>
+    `;
+    
+    document.body.appendChild(toast);
+    
+    // Animasyon
+    setTimeout(() => toast.classList.add('show'), 10);
+    
+    // Otomatik kaldır
+    setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
+}
+
+// Sayfa Geçiş Animasyonları
+function showPageWithAnimation(pageId) {
+    const currentPage = document.querySelector('.page.active');
+    const nextPage = document.getElementById(pageId);
+    
+    if (currentPage) {
+        currentPage.style.animation = 'fadeOut 0.3s ease';
+        setTimeout(() => {
+            currentPage.classList.remove('active');
+            currentPage.style.animation = '';
+            nextPage.classList.add('active');
+            nextPage.style.animation = 'fadeIn 0.3s ease';
+            window.scrollTo(0, 0);
+        }, 300);
+    } else {
+        nextPage.classList.add('active');
+        nextPage.style.animation = 'fadeIn 0.3s ease';
+    }
+}
+
+// Klavye Kısayolları
+document.addEventListener('keydown', function(e) {
+    // ESC tuşu ile modal kapatma
+    if (e.key === 'Escape') {
+        const modal = document.querySelector('.modal.active');
+        if (modal) {
+            modal.classList.remove('active');
+        }
+    }
+    
+    // Enter tuşu ile form gönderme (sadece input'ta iken)
+    if (e.key === 'Enter' && e.target.tagName === 'INPUT') {
+        const form = e.target.closest('form');
+        if (form) {
+            e.preventDefault();
+            form.dispatchEvent(new Event('submit'));
+        }
+    }
+});
+
+console.log('✅ Gelişmiş özellikler yüklendi');
+
+
+// ============================================
+// BAĞIMLILIK ÖZELLİKLERİ ENTEGRASYONU
+// ============================================
+
+// Başarılar Paneli
+function showAchievementsPanel() {
+    const progress = getAchievementProgress();
+    const userAchievements = currentUser?.achievements || [];
+    
+    const modal = document.createElement('div');
+    modal.className = 'modal active';
+    modal.innerHTML = `
+        <div class="modal-content" style="max-width: 700px;">
+            <h2>🏆 Başarılar</h2>
+            <div style="text-align: center; margin-bottom: 2rem;">
+                <div style="font-size: 3rem; font-weight: 700; color: var(--primary-color);">
+                    ${progress.unlocked}/${progress.total}
+                </div>
+                <div style="color: var(--text-secondary);">
+                    %${progress.percentage} Tamamlandı
+                </div>
+                <div style="background: var(--border-color); height: 10px; border-radius: 10px; margin-top: 1rem; overflow: hidden;">
+                    <div style="background: var(--gradient-1); height: 100%; width: ${progress.percentage}%; transition: width 1s;"></div>
+                </div>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1rem; max-height: 500px; overflow-y: auto;">
+                ${Object.values(ACHIEVEMENTS).map(ach => {
+                    const unlocked = userAchievements.includes(ach.id);
+                    return `
+                        <div class="achievement-card ${unlocked ? 'unlocked' : 'locked'}" style="
+                            padding: 1.5rem;
+                            background: ${unlocked ? 'var(--card-bg)' : 'rgba(30, 41, 59, 0.3)'};
+                            border: 2px solid ${unlocked ? 'var(--primary-color)' : 'var(--border-color)'};
+                            border-radius: 12px;
+                            text-align: center;
+                            ${unlocked ? '' : 'filter: grayscale(1); opacity: 0.5;'}
+                        ">
+                            <div style="font-size: 3rem; margin-bottom: 0.5rem;">${ach.icon}</div>
+                            <div style="font-weight: 600; margin-bottom: 0.25rem;">${ach.title}</div>
+                            <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.5rem;">${ach.description}</div>
+                            <div style="color: var(--success-color); font-weight: 600;">+${ach.xp} XP</div>
+                            <div style="font-size: 0.75rem; color: var(--warning-color); text-transform: uppercase; margin-top: 0.5rem;">${ach.rarity}</div>
+                        </div>
+                    `;
+                }).join('')}
+            </div>
+            
+            <div class="modal-actions" style="margin-top: 2rem;">
+                <button class="btn-secondary" onclick="this.closest('.modal').remove()">Kapat</button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+}
+
+// Oyun başladığında kontroller
+function initGameFeatures() {
+    if (!currentUser) return;
+    
+    // İlk giriş başarısı
+    checkAchievement('first_login');
+    
+    // Günlük ödül kontrolü
+    checkDailyReward();
+    
+    // Zaman bazlı başarılar
+    checkTimeBasedAchievements();
+    
+    // Seviye bazlı başarılar
+    const level = currentUser.level || 1;
+    if (level >= 5) checkAchievement('level_5');
+    if (level >= 10) checkAchievement('level_10');
+    
+    // Giriş serisi başarıları
+    const streak = currentUser.loginStreak || 0;
+    if (streak >= 3) checkAchievement('streak_3');
+    if (streak >= 7) checkAchievement('streak_7');
+    
+    // Oyun sayısı başarıları
+    const gamesPlayed = currentUser.scenarios?.length || 0;
+    if (gamesPlayed >= 10) checkAchievement('games_10');
+    if (gamesPlayed >= 50) checkAchievement('games_50');
+}
+
+// Senaryo tamamlandığında
+function onScenarioComplete(scenarioData) {
+    if (!currentUser) return;
+    
+    // İlk oyun başarısı
+    if ((currentUser.scenarios?.length || 0) === 1) {
+        checkAchievement('first_game');
+    }
+    
+    // Coin kazan
+    const baseCoins = 50;
+    earnCoins(baseCoins);
+    
+    // XP kazan (booster kontrolü ile)
+    let xpEarned = 100;
+    if (currentUser.activeBooster && currentUser.activeBooster.expiresAt > Date.now()) {
+        if (currentUser.activeBooster.id === 'xp_boost_2x') {
+            xpEarned *= 2;
+        } else if (currentUser.activeBooster.id === 'xp_boost_3x') {
+            xpEarned *= 3;
+        }
+    }
+    
+    currentUser.xp = (currentUser.xp || 0) + xpEarned;
+    
+    // Seviye kontrolü
+    checkLevelUp();
+    
+    saveToStorage('currentUser', currentUser);
+    updateUserInStorage(currentUser);
+}
+
+// Seviye atlama kontrolü
+function checkLevelUp() {
+    if (!currentUser) return;
+    
+    const currentXP = currentUser.xp || 0;
+    const currentLevel = currentUser.level || 1;
+    const xpForNextLevel = currentLevel * 100;
+    
+    if (currentXP >= xpForNextLevel) {
+        currentUser.level = currentLevel + 1;
+        currentUser.xp = currentXP - xpForNextLevel;
+        
+        showLevelUpModal(currentUser.level);
+        
+        // Seviye başarıları
+        if (currentUser.level === 5) checkAchievement('level_5');
+        if (currentUser.level === 10) checkAchievement('level_10');
+        
+        playSound('levelup');
+        createConfetti();
+    }
+}
+
+function showLevelUpModal(newLevel) {
+    const modal = document.createElement('div');
+    modal.className = 'modal active';
+    modal.innerHTML = `
+        <div class="modal-content" style="text-align: center; background: var(--gradient-1); color: white;">
+            <div style="font-size: 5rem; animation: bounce 1s ease infinite;">🎉</div>
+            <h2 style="font-size: 3rem; margin: 1rem 0;">Seviye Atladın!</h2>
+            <div style="font-size: 4rem; font-weight: 700; margin: 2rem 0;">
+                Seviye ${newLevel}
+            </div>
+            <p style="font-size: 1.2rem; opacity: 0.9;">Tebrikler! Yeni seviyeye ulaştın! 🚀</p>
+            <button class="btn-primary btn-full" onclick="this.closest('.modal').remove()" style="margin-top: 2rem; background: white; color: var(--primary-color);">
+                Harika! 🎊
+            </button>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+}
+
+// Sayfa yüklendiğinde
+document.addEventListener('DOMContentLoaded', function() {
+    // Mevcut kullanıcı varsa özellikleri başlat
+    const savedUser = getFromStorage('currentUser');
+    if (savedUser) {
+        currentUser = savedUser;
+        initGameFeatures();
+    }
+});
+
+console.log('✅ Bağımlılık özellikleri entegre edildi');
+
+
+// ============================================
+// GÜNLÜK GÖREVLER VE BİLDİRİMLER ENTEGRASYONU
+// ============================================
+
+// Oyun başladığında görevleri başlat
+function initGameWithQuests() {
+    if (!currentUser) return;
+    
+    // Günlük görevleri başlat
+    initDailyQuests();
+    
+    // Görev ilerlemelerini güncelle
+    updateQuestProgress('shop', 0); // Mağaza ziyareti için hazır
+    updateQuestProgress('leaderboard', 0); // Liderlik için hazır
+}
+
+// Senaryo tamamlandığında görevleri güncelle
+function onScenarioCompleteWithQuests(scenarioData) {
+    if (!currentUser) return;
+    
+    // Senaryo görevini güncelle
+    updateQuestProgress('scenario', 1);
+    
+    // Combo görevini güncelle
+    const combo = currentUser.dailyCombo || 0;
+    if (combo >= 5) {
+        updateQuestProgress('combo', combo);
+    }
+    
+    // XP görevini güncelle
+    const dailyXP = currentUser.dailyXPEarned || 0;
+    updateQuestProgress('xp', dailyXP);
+    
+    // Coin kazan
+    const baseCoins = 50;
+    earnCoins(baseCoins);
+    
+    // XP kazan (booster kontrolü ile)
+    let xpEarned = 100;
+    if (currentUser.activeBooster && currentUser.activeBooster.expiresAt > Date.now()) {
+        if (currentUser.activeBooster.id === 'xp_boost_2x') {
+            xpEarned *= 2;
+        } else if (currentUser.activeBooster.id === 'xp_boost_3x') {
+            xpEarned *= 3;
+        }
+    }
+    
+    currentUser.xp = (currentUser.xp || 0) + xpEarned;
+    currentUser.dailyXPEarned = (currentUser.dailyXPEarned || 0) + xpEarned;
+    
+    // Seviye kontrolü
+    checkLevelUp();
+    
+    // Combo kontrolü
+    checkComboBonus();
+    
+    saveToStorage('currentUser', currentUser);
+    updateUserInStorage(currentUser);
+}
+
+// Mini oyun oynandığında
+function onMiniGamePlayed(gameType) {
+    if (!currentUser) return;
+    
+    currentUser.miniGamesPlayed = currentUser.miniGamesPlayed || [];
+    
+    const today = new Date().toDateString();
+    const todayGames = currentUser.miniGamesPlayed.filter(g => g.date === today);
+    
+    if (!todayGames.find(g => g.type === gameType)) {
+        currentUser.miniGamesPlayed.push({
+            type: gameType,
+            date: today
+        });
+        
+        // Görev ilerlemesi
+        const uniqueGamesToday = new Set(currentUser.miniGamesPlayed.filter(g => g.date === today).map(g => g.type)).size;
+        updateQuestProgress('minigame', uniqueGamesToday);
+    }
+    
+    saveToStorage('currentUser', currentUser);
+    updateUserInStorage(currentUser);
+}
+
+// Mağaza ziyareti
+function onShopVisited() {
+    if (!currentUser) return;
+    updateQuestProgress('shop', 1);
+}
+
+// Liderlik ziyareti
+function onLeaderboardVisited() {
+    if (!currentUser) return;
+    updateQuestProgress('leaderboard', 1);
+}
+
+// Sayfa yüklendiğinde
+document.addEventListener('DOMContentLoaded', function() {
+    const savedUser = getFromStorage('currentUser');
+    if (savedUser) {
+        currentUser = savedUser;
+        initGameFeatures();
+        initGameWithQuests();
+    }
+});
+
+console.log('✅ Günlük görevler ve bildirimler entegre edildi');

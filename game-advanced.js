@@ -8,7 +8,22 @@ let playerLevel = {
 };
 
 function addXP(amount) {
+    // Combo çarpanı uygula
+    if (window.addictionState && window.addictionState.comboMultiplier > 1) {
+        amount = Math.floor(amount * window.addictionState.comboMultiplier);
+    }
+    
+    // Ultra mod çarpanı
+    if (window.gameState && window.gameState.xpMultiplier) {
+        amount = Math.floor(amount * window.gameState.xpMultiplier);
+    }
+    
     playerLevel.xp += amount;
+    
+    // İlerleme takibi
+    if (typeof onXPGained === 'function') {
+        onXPGained(amount);
+    }
     
     while (playerLevel.xp >= playerLevel.xpToNextLevel) {
         playerLevel.xp -= playerLevel.xpToNextLevel;
@@ -26,9 +41,19 @@ function addXP(amount) {
 function updateLevelDisplay() {
     const levelDisplay = document.getElementById('player-level');
     const xpBar = document.getElementById('xp-bar');
+    const currentXpDisplay = document.getElementById('current-xp');
+    const nextLevelXpDisplay = document.getElementById('next-level-xp');
     
     if (levelDisplay) {
         levelDisplay.textContent = `Seviye ${playerLevel.level}`;
+    }
+    
+    if (currentXpDisplay) {
+        currentXpDisplay.textContent = Math.floor(playerLevel.xp);
+    }
+    
+    if (nextLevelXpDisplay) {
+        nextLevelXpDisplay.textContent = playerLevel.xpToNextLevel;
     }
     
     if (xpBar) {
@@ -78,6 +103,11 @@ function checkAchievement(achievementId, value = null) {
         case 'eco_warrior':
             achievement.count = (achievement.count || 0) + 1;
             unlock = achievement.count >= 3;
+            
+            // İlerleme takibi
+            if (unlock && typeof onAchievementUnlocked === 'function') {
+                onAchievementUnlocked();
+            }
             break;
         case 'quiz_master':
             achievement.count = (achievement.count || 0) + 1;
@@ -179,15 +209,92 @@ const randomEvents = [
         desc: 'Vatandaşlar yeşil alanların korunması için sokağa çıktı.',
         effects: { quality: -1 },
         choices: [
-            { text: 'Talepleri kabul et', effect: { quality: +2, green: +2 } },
-            { text: 'Müzakere et', effect: { quality: +1 } },
-            { text: 'Görmezden gel', effect: { quality: -2 } }
+            { text: 'Talepleri kabul et', effect: { quality: +2, green: +2, happiness: +15, support: +10 } },
+            { text: 'Müzakere et', effect: { quality: +1, happiness: +5, support: +5 } },
+            { text: 'Görmezden gel', effect: { quality: -2, happiness: -20, support: -15 } }
+        ]
+    },
+    {
+        id: 'flood',
+        name: '🌊 Sel Felaketi',
+        desc: 'Şiddetli yağışlar sonucu bazı mahalleler su altında kaldı!',
+        effects: { quality: -2 },
+        choices: [
+            { text: 'Acil müdahale ekipleri', cost: 'Yüksek', effect: { quality: +2, happiness: +15, support: +12 } },
+            { text: 'Temel yardım', cost: 'Orta', effect: { quality: +1, happiness: +8, support: +5 } },
+            { text: 'Minimum müdahale', cost: 'Düşük', effect: { happiness: -10, support: -15 } }
+        ]
+    },
+    {
+        id: 'festival',
+        name: '🎉 Şehir Festivali',
+        desc: 'Büyük bir müzik festivali düzenlemek ister misiniz?',
+        effects: {},
+        choices: [
+            { text: 'Büyük festival düzenle', cost: 'Yüksek', effect: { quality: 'İyi', happiness: +25, support: +15, economy: 'Güçlü' } },
+            { text: 'Küçük etkinlik', cost: 'Orta', effect: { happiness: +12, support: +8 } },
+            { text: 'İptal et', cost: 'Yok', effect: { happiness: -8, support: -5 } }
+        ]
+    },
+    {
+        id: 'traffic_jam',
+        name: '🚗 Trafik Çöktü',
+        desc: 'Ana caddelerde büyük trafik sıkışıklığı! Vatandaşlar çok sinirli.',
+        effects: { quality: -1 },
+        choices: [
+            { text: 'Acil trafik düzenlemesi', effect: { traffic: 'Orta', happiness: +10, support: +8 } },
+            { text: 'Toplu taşıma teşviki', effect: { traffic: 'Orta', happiness: +5, support: +5 } },
+            { text: 'Bekle, geçer', effect: { happiness: -15, support: -12 } }
+        ]
+    },
+    {
+        id: 'air_pollution',
+        name: '😷 Hava Kirliliği Alarmı',
+        desc: 'Hava kalitesi tehlikeli seviyelere ulaştı! Çocuklar ve yaşlılar risk altında.',
+        effects: { air: 'Çok Düşük', quality: -2 },
+        choices: [
+            { text: 'Acil önlemler al', cost: 'Yüksek', effect: { air: 'Orta', happiness: +15, support: +10 } },
+            { text: 'Uyarı yap', cost: 'Düşük', effect: { happiness: +5, support: +3 } },
+            { text: 'Görmezden gel', cost: 'Yok', effect: { happiness: -20, support: -18 } }
+        ]
+    },
+    {
+        id: 'park_demand',
+        name: '🌳 Park Talebi',
+        desc: 'Mahalle sakinleri yeni park istiyor. Boş arsa var ama bütçe sınırlı.',
+        effects: {},
+        choices: [
+            { text: 'Modern park yap', cost: 'Yüksek', effect: { green: '%12', quality: 'İyi', happiness: +20, support: +15 } },
+            { text: 'Basit park', cost: 'Orta', effect: { green: '%10', happiness: +10, support: +8 } },
+            { text: 'Sonra yaparız', cost: 'Yok', effect: { happiness: -12, support: -10 } }
+        ]
+    },
+    {
+        id: 'corruption',
+        name: '💰 Yolsuzluk İddiası',
+        desc: 'Belediyede yolsuzluk yapıldığı iddia ediliyor. Basın peşinizde!',
+        effects: { support: -15 },
+        choices: [
+            { text: 'Şeffaf soruşturma', effect: { support: +20, happiness: +15 } },
+            { text: 'İç soruşturma', effect: { support: +5, happiness: +3 } },
+            { text: 'Yok say', effect: { support: -25, happiness: -20 } }
+        ]
+    },
+    {
+        id: 'youth_unemployment',
+        name: '👨‍💼 Genç İşsizliği',
+        desc: 'Gençler arasında işsizlik oranı yüksek. Çözüm üretmeli misiniz?',
+        effects: { happiness: -5 },
+        choices: [
+            { text: 'İş kursu ve staj programı', cost: 'Yüksek', effect: { economy: 'Güçlü', happiness: +20, support: +15 } },
+            { text: 'Girişimcilik desteği', cost: 'Orta', effect: { economy: 'Büyüyen', happiness: +12, support: +10 } },
+            { text: 'Piyasa halleder', cost: 'Yok', effect: { happiness: -15, support: -12 } }
         ]
     }
 ];
 
 function triggerRandomEvent() {
-    if (Math.random() > 0.3) return; // %30 şans
+    if (Math.random() > 0.5) return; // %50 şans
     
     const event = randomEvents[Math.floor(Math.random() * randomEvents.length)];
     showRandomEventModal(event);
@@ -228,11 +335,34 @@ function handleEventChoice(choiceIndex, eventId) {
         gameState.indicators.economy = adjustIndicator(gameState.indicators.economy, choice.effect.economy);
     }
     if (choice.effect.air) {
-        gameState.indicators.air = adjustIndicator(gameState.indicators.air, choice.effect.air);
+        if (typeof choice.effect.air === 'string') {
+            gameState.indicators.air = choice.effect.air;
+        } else {
+            gameState.indicators.air = adjustIndicator(gameState.indicators.air, choice.effect.air);
+        }
+    }
+    if (choice.effect.traffic) {
+        if (typeof choice.effect.traffic === 'string') {
+            gameState.indicators.traffic = choice.effect.traffic;
+        } else {
+            gameState.indicators.traffic = adjustIndicator(gameState.indicators.traffic, choice.effect.traffic);
+        }
     }
     if (choice.effect.green) {
-        const current = parseInt(gameState.indicators.green);
-        gameState.indicators.green = `%${Math.max(0, Math.min(100, current + choice.effect.green * 2))}`;
+        if (typeof choice.effect.green === 'string') {
+            gameState.indicators.green = choice.effect.green;
+        } else {
+            const current = parseInt(gameState.indicators.green);
+            gameState.indicators.green = `%${Math.max(0, Math.min(100, current + choice.effect.green * 2))}`;
+        }
+    }
+    
+    // Mutluluk ve destek
+    if (choice.effect.happiness) {
+        gameState.happiness = Math.max(0, Math.min(100, gameState.happiness + choice.effect.happiness));
+    }
+    if (choice.effect.support) {
+        gameState.support = Math.max(0, Math.min(100, gameState.support + choice.effect.support));
     }
     
     updateIndicators();
@@ -285,4 +415,23 @@ function saveDailyQuests() {
 
 function savePlayerProgress() {
     saveToStorage('playerLevel', playerLevel);
+}
+
+function loadPlayerProgress() {
+    const saved = getFromStorage('playerLevel');
+    if (saved) {
+        playerLevel.level = saved.level || 1;
+        playerLevel.xp = saved.xp || 0;
+        playerLevel.xpToNextLevel = saved.xpToNextLevel || 100;
+    }
+    updateLevelDisplay();
+}
+
+// Sayfa yüklendiğinde player progress'i yükle
+if (typeof window !== 'undefined') {
+    window.addEventListener('DOMContentLoaded', () => {
+        setTimeout(() => {
+            loadPlayerProgress();
+        }, 500);
+    });
 }

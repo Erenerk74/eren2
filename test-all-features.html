@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KararLab - Tam Test</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="advanced-styles.css">
+    <style>
+        .test-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin: 2rem 0;
+        }
+        .test-card {
+            background: var(--card-bg);
+            padding: 1.5rem;
+            border-radius: 12px;
+            border: 2px solid var(--border-color);
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: center;
+        }
+        .test-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--primary-color);
+            box-shadow: 0 10px 30px rgba(99, 102, 241, 0.3);
+        }
+        .test-icon {
+            font-size: 3rem;
+            margin-bottom: 0.5rem;
+        }
+        .test-title {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+        .test-status {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+        .test-status.success { color: var(--success-color); }
+        .test-status.error { color: var(--danger-color); }
+    </style>
+</head>
+<body>
+    <div style="padding: 2rem; max-width: 1400px; margin: 0 auto;">
+        <h1 style="text-align: center; margin-bottom: 1rem;">🎮 KararLab v2.6 - Tam Test</h1>
+        <p style="text-align: center; color: var(--text-secondary); margin-bottom: 2rem;">
+            Tüm özellikleri test et ve çalıştığından emin ol
+        </p>
+        
+        <!-- Kullanıcı Bilgileri -->
+        <div style="background: var(--card-bg); padding: 2rem; border-radius: 16px; margin-bottom: 2rem;">
+            <h2>👤 Test Kullanıcısı</h2>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-top: 1rem;">
+                <input type="text" id="test-username" placeholder="Kullanıcı Adı" class="test-input">
+                <button class="btn-primary" onclick="createTestUser()">Kullanıcı Oluştur</button>
+                <button class="btn-secondary" onclick="resetTestData()">Verileri Sıfırla</button>
+            </div>
+            <div id="user-info" style="margin-top: 1rem; padding: 1rem; background: var(--bg-color); border-radius: 8px; display: none;">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem;">
+                    <div>
+                        <div style="color: var(--text-secondary); font-size: 0.9rem;">Kullanıcı</div>
+                        <div id="user-name" style="font-weight: 600;">-</div>
+                    </div>
+                    <div>
+                        <div style="color: var(--text-secondary); font-size: 0.9rem;">Seviye</div>
+                        <div id="user-level" style="font-weight: 600;">-</div>
+                    </div>
+                    <div>
+                        <div style="color: var(--text-secondary); font-size: 0.9rem;">XP</div>
+                        <div id="user-xp" style="font-weight: 600;">-</div>
+                    </div>
+                    <div>
+                        <div style="color: var(--text-secondary); font-size: 0.9rem;">Coin</div>
+                        <div id="user-coins" style="font-weight: 600;">-</div>
+                    </div>
+                    <div>
+                        <div style="color: var(--text-secondary); font-size: 0.9rem;">Giriş Serisi</div>
+                        <div id="user-streak" style="font-weight: 600;">-</div>
+                    </div>
+                    <div>
+                        <div style="color: var(--text-secondary); font-size: 0.9rem;">Başarılar</div>
+                        <div id="user-achievements" style="font-weight: 600;">-</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Test Kategorileri -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem;">
+            
+            <!-- Temel Özellikler -->
+            <div>
+                <h3>🎯 Temel Özellikler</h3>
+                <div class="test-grid">
+                    <div class="test-card" onclick="testFeature('daily-reward')">
+                        <div class="test-icon">🎁</div>
+                        <div class="test-title">Günlük Ödül</div>
+                        <div class="test-status" id="status-daily-reward">Test Et</div>
+                    </div>
+                    <div class="test-card" onclick="testFeature('achievement')">
+                        <div class="test-icon">🏆</div>
+                        <div class="test-title">Başarı</div>
+                        <div class="test-status" id="status-achievement">Test Et</div>
+                    </div>
+                    <div class="test-card" onclick="testFeature('level-up')">
+                        <div class="test-icon">⬆️</div>
+                        <div class="test-title">Seviye Atlama</div>
+                        <div class="test-status" id="status-level-up">Test Et</div>
+                    </div>
+                    <div class="test-card" onclick="testFeature('shop')">
+                        <div class="test-icon">🛒</div>
+                        <div class="test-title">Mağaza</div>
+                        <div class="test-status" id="status-shop">Test Et</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Rekabet Özellikleri -->
+            <div>
+                <h3>🏆 Rekabet</h3>
+                <div class="test-grid">
+                    <div class="test-card" onclick="testFeature('leaderboard')">
+                        <div class="test-icon">📊</div>
+                        <div class="test-title">Liderlik</div>
+                        <div class="test-status" id="status-leaderboard">Test Et</div>
+                    </div>
+                    <div class="test-card" onclick="testFeature('tournament')">
+                        <div class="test-icon">🎯</div>
+                        <div class="test-title">Turnuva</div>
+                        <div class="test-status" id="status-tournament">Test Et</div>
+                    </div>
+                    <div class="test-card" onclick="testFeature('streak')">
+                        <div class="test-icon">🔥</div>
+                        <div class="test-title">Seri Sistemi</div>
+                        <div class="test-status" id="status-streak">Test Et</div>
+                    </div>
+                    <div class="test-card" onclick="testFeature('combo')">
+                        <div class="test-icon">💥</div>
+                        <div class="test-title">Combo</div>
+                        <div class="test-status" id="status-combo">Test Et</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Mini Oyunlar -->
+            <div>
+                <h3>🎮 Mini Oyunlar</h3>
+                <div class="test-grid">
+                    <div class="test-card" onclick="testFeature('spin-wheel')">
+                        <div class="test-icon">🎡</div>
+                        <div class="test-title">Şans Çarkı</div>
+                        <div class="test-status" id="status-spin-wheel">Test Et</div>
+                    </div>
+                    <div class="test-card" onclick="testFeature('scratch-card')">
+                        <div class="test-icon">🎫</div>
+                        <div class="test-title">Kazı Kazan</div>
+                        <div class="test-status" id="status-scratch-card">Test Et</div>
+                    </div>
+                    <div class="test-card" onclick="testFeature('trivia')">
+                        <div class="test-icon">🧠</div>
+                        <div class="test-title">Trivia</div>
+                        <div class="test-status" id="status-trivia">Test Et</div>
+                    </div>
+                    <div class="test-card" onclick="testFeature('referral')">
+                        <div class="test-icon">👥</div>
+                        <div class="test-title">Referral</div>
+                        <div class="test-status" id="status-referral">Test Et</div>
+                    </div>
+                </div>
+            </div>
+            
+        </div>
+        
+        <!-- Test Sonuçları -->
+        <div style="background: var(--card-bg); padding: 2rem; border-radius: 16px; margin-top: 2rem;">
+            <h2>📋 Test Sonuçları</h2>
+            <div id="test-results" style="margin-top: 1rem; max-height: 400px; overflow-y: auto; font-family: monospace; font-size: 0.9rem;"></div>
+        </div>
+        
+        <!-- Hızlı Aksiyonlar -->
+        <div style="background: var(--card-bg); padding: 2rem; border-radius: 16px; margin-top: 2rem;">
+            <h2>⚡ Hızlı Aksiyonlar</h2>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-top: 1rem;">
+                <button class="btn-secondary" onclick="addXP(100)">+100 XP</button>
+                <button class="btn-secondary" onclick="addCoins(100)">+100 Coin</button>
+                <button class="btn-secondary" onclick="increaseStreak()">+1 Giriş Serisi</button>
+                <button class="btn-secondary" onclick="unlockRandomAchievement()">Rastgele Başarı</button>
+                <button class="btn-secondary" onclick="simulateCombo()">Combo Simüle Et</button>
+                <button class="btn-secondary" onclick="testAllFeatures()">Tümünü Test Et</button>
+            </div>
+        </div>
+    </div>
+    
+    <script src="confetti.js"></script>
+    <script src="sound-system.js"></script>
+    <script src="app.js"></script>
+    <script src="daily-rewards.js"></script>
+    <script src="achievements.js"></script>
+    <script src="shop-system.js"></script>
+    <script src="leaderboard.js"></script>
+    <script src="streak-system.js"></script>
+    <script src="mini-games.js"></script>
+    <script src="referral-system.js"></script>
+    
+    <script>
+        let testResults = [];
+        
+        function log(message, type = 'info') {
+            const time = new Date().toLocaleTimeString();
+            const icon = type === 'success' ? '✅' : type === 'error' ? '❌' : type === 'warning' ? '⚠️' : 'ℹ️';
+            const color = type === 'success' ? 'var(--success-color)' : type === 'error' ? 'var(--danger-color)' : type === 'warning' ? 'var(--warning-color)' : 'var(--text-secondary)';
+            
+            const results = document.getElementById('test-results');
+            results.innerHTML += `<div style="margin-bottom: 0.5rem; color: ${color};">[${time}] ${icon} ${message}</div>`;
+            results.scrollTop = results.scrollHeight;
+            
+            testResults.push({ time, type, message });
+        }
+        
+        function createTestUser() {
+            const username = document.getElementById('test-username').value || 'test_' + Date.now();
+            
+            currentUser = {
+                id: Date.now(),
+                name: username,
+                email: username,
+                password: '123456',
+                type: 'student',
+                level: 1,
+                xp: 0,
+                coins: 1000,
+                scenarios: [],
+                achievements: [],
+                shopItems: [],
+                loginStreak: 0,
+                dailyCombo: 0,
+                lastLogin: '',
+                referrals: [],
+                streakFreezes: 2,
+                createdAt: new Date().toISOString()
+            };
+            
+            saveToStorage('currentUser', currentUser);
+            
+            const users = getFromStorage('users') || [];
+            users.push(currentUser);
+            saveToStorage('users', users);
+            
+            updateUserInfo();
+            log(`Test kullanıcısı oluşturuldu: ${username}`, 'success');
+        }
+        
+        function updateUserInfo() {
+            if (!currentUser) return;
+            
+            document.getElementById('user-info').style.display = 'block';
+            document.getElementById('user-name').textContent = currentUser.name;
+            document.getElementById('user-level').textContent = currentUser.level || 1;
+            document.getElementById('user-xp').textContent = currentUser.xp || 0;
+            document.getElementById('user-coins').textContent = currentUser.coins || 0;
+            document.getElementById('user-streak').textContent = currentUser.loginStreak || 0;
+            document.getElementById('user-achievements').textContent = (currentUser.achievements || []).length;
+        }
+        
+        function resetTestData() {
+            if (confirm('Tüm test verileri silinecek. Emin misiniz?')) {
+                localStorage.clear();
+                currentUser = null;
+                document.getElementById('user-info').style.display = 'none';
+                document.getElementById('test-results').innerHTML = '';
+                log('Tüm veriler sıfırlandı', 'warning');
+            }
+        }
+        
+        function testFeature(feature) {
+            if (!currentUser) {
+                log('Önce test kullanıcısı oluşturun!', 'error');
+                return;
+            }
+            
+            log(`${feature} testi başlatılıyor...`, 'info');
+            
+            try {
+                switch(feature) {
+                    case 'daily-reward':
+                        showDailyRewardModal(Math.floor(Math.random() * 7) + 1);
+                        updateStatus(feature, 'success');
+                        break;
+                    case 'achievement':
+                        checkAchievement('first_login');
+                        updateStatus(feature, 'success');
+                        break;
+                    case 'level-up':
+                        currentUser.level = (currentUser.level || 1) + 1;
+                        showLevelUpModal(currentUser.level);
+                        updateStatus(feature, 'success');
+                        break;
+                    case 'shop':
+                        showShop();
+                        updateStatus(feature, 'success');
+                        break;
+                    case 'leaderboard':
+                        showLeaderboard();
+                        updateStatus(feature, 'success');
+                        break;
+                    case 'tournament':
+                        showWeeklyTournament();
+                        updateStatus(feature, 'success');
+                        break;
+                    case 'streak':
+                        checkStreakMilestone();
+                        updateStatus(feature, 'success');
+                        break;
+                    case 'combo':
+                        checkComboBonus();
+                        updateStatus(feature, 'success');
+                        break;
+                    case 'spin-wheel':
+                        showSpinWheel();
+                        updateStatus(feature, 'success');
+                        break;
+                    case 'scratch-card':
+                        showScratchCard();
+                        updateStatus(feature, 'success');
+                        break;
+                    case 'trivia':
+                        showDailyTrivia();
+                        updateStatus(feature, 'success');
+                        break;
+                    case 'referral':
+                        showReferralPanel();
+                        updateStatus(feature, 'success');
+                        break;
+                }
+                
+                log(`${feature} testi başarılı!`, 'success');
+                updateUserInfo();
+            } catch (error) {
+                log(`${feature} testi BAŞARISIZ: ${error.message}`, 'error');
+                updateStatus(feature, 'error');
+            }
+        }
+        
+        function updateStatus(feature, status) {
+            const statusEl = document.getElementById(`status-${feature}`);
+            if (statusEl) {
+                statusEl.textContent = status === 'success' ? '✓ Başarılı' : '✗ Hata';
+                statusEl.className = `test-status ${status}`;
+            }
+        }
+        
+        function addXP(amount) {
+            if (!currentUser) return;
+            currentUser.xp = (currentUser.xp || 0) + amount;
+            saveToStorage('currentUser', currentUser);
+            updateUserInStorage(currentUser);
+            updateUserInfo();
+            log(`+${amount} XP eklendi`, 'success');
+        }
+        
+        function addCoins(amount) {
+            if (!currentUser) return;
+            currentUser.coins = (currentUser.coins || 0) + amount;
+            saveToStorage('currentUser', currentUser);
+            updateUserInStorage(currentUser);
+            updateUserInfo();
+            log(`+${amount} Coin eklendi`, 'success');
+        }
+        
+        function increaseStreak() {
+            if (!currentUser) return;
+            currentUser.loginStreak = (currentUser.loginStreak || 0) + 1;
+            saveToStorage('currentUser', currentUser);
+            updateUserInStorage(currentUser);
+            updateUserInfo();
+            log(`Giriş serisi artırıldı: ${currentUser.loginStreak}`, 'success');
+        }
+        
+        function unlockRandomAchievement() {
+            if (!currentUser) return;
+            const allAchievements = Object.keys(ACHIEVEMENTS);
+            const unlockedAchievements = currentUser.achievements || [];
+            const lockedAchievements = allAchievements.filter(a => !unlockedAchievements.includes(a));
+            
+            if (lockedAchievements.length > 0) {
+                const randomAch = lockedAchievements[Math.floor(Math.random() * lockedAchievements.length)];
+                checkAchievement(randomAch);
+                updateUserInfo();
+                log(`Başarı kazanıldı: ${ACHIEVEMENTS[randomAch].title}`, 'success');
+            } else {
+                log('Tüm başarılar zaten kazanılmış!', 'warning');
+            }
+        }
+        
+        function simulateCombo() {
+            if (!currentUser) return;
+            currentUser.dailyCombo = (currentUser.dailyCombo || 0) + 3;
+            checkComboBonus();
+            updateUserInfo();
+            log(`Combo simüle edildi: ${currentUser.dailyCombo}x`, 'success');
+        }
+        
+        function testAllFeatures() {
+            log('=== TÜM ÖZELLİKLER TEST EDİLİYOR ===', 'info');
+            
+            const features = [
+                'daily-reward', 'achievement', 'level-up', 'shop',
+                'leaderboard', 'tournament', 'streak', 'combo',
+                'spin-wheel', 'scratch-card', 'trivia', 'referral'
+            ];
+            
+            let index = 0;
+            const interval = setInterval(() => {
+                if (index < features.length) {
+                    testFeature(features[index]);
+                    index++;
+                } else {
+                    clearInterval(interval);
+                    log('=== TÜM TESTLER TAMAMLANDI ===', 'success');
+                }
+            }, 1000);
+        }
+        
+        // Sayfa yüklendiğinde
+        if (getFromStorage('currentUser')) {
+            currentUser = getFromStorage('currentUser');
+            updateUserInfo();
+            log('Mevcut kullanıcı yüklendi', 'info');
+        } else {
+            log('Test sayfası hazır. Kullanıcı oluşturun.', 'info');
+        }
+    </script>
+</body>
+</html>

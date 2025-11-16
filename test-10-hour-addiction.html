@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>10 Saat Bağımlılık Sistemi - Test</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 2rem;
+            color: white;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            text-align: center;
+            margin-bottom: 2rem;
+            font-size: 2.5rem;
+        }
+        
+        .test-section {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            padding: 2rem;
+            border-radius: 20px;
+            margin-bottom: 2rem;
+        }
+        
+        .test-section h2 {
+            margin-bottom: 1rem;
+            font-size: 1.5rem;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+        
+        .stat-card {
+            background: rgba(255,255,255,0.2);
+            padding: 1.5rem;
+            border-radius: 12px;
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+        
+        .stat-label {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+        
+        .btn {
+            background: white;
+            color: #667eea;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            margin: 0.5rem;
+            transition: all 0.3s;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+        
+        .btn-danger {
+            background: #ef4444;
+            color: white;
+        }
+        
+        .log {
+            background: rgba(0,0,0,0.3);
+            padding: 1rem;
+            border-radius: 8px;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 0.9rem;
+        }
+        
+        .log-entry {
+            padding: 0.5rem;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .progress-bar {
+            background: rgba(255,255,255,0.2);
+            height: 30px;
+            border-radius: 15px;
+            overflow: hidden;
+            margin: 1rem 0;
+        }
+        
+        .progress-fill {
+            background: linear-gradient(90deg, #10b981, #34d399);
+            height: 100%;
+            transition: width 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔥 10 Saat Bağımlılık Sistemi Test</h1>
+        
+        <!-- Oturum İstatistikleri -->
+        <div class="test-section">
+            <h2>📊 Oturum İstatistikleri</h2>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value" id="session-time">0:00</div>
+                    <div class="stat-label">Oturum Süresi</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="total-clicks">0</div>
+                    <div class="stat-label">Toplam Tıklama</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="total-scrolls">0</div>
+                    <div class="stat-label">Toplam Scroll</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="combo-multiplier">1x</div>
+                    <div class="stat-label">Combo Çarpanı</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="urgency-level">1</div>
+                    <div class="stat-label">Aciliyet Seviyesi</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- İlerleme Sistemi -->
+        <div class="test-section">
+            <h2>📈 İlerleme Sistemi</h2>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value" id="total-playtime">0</div>
+                    <div class="stat-label">Toplam Oyun Süresi (dk)</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="total-scenarios">0</div>
+                    <div class="stat-label">Tamamlanan Senaryo</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="total-xp">0</div>
+                    <div class="stat-label">Toplam XP</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="total-achievements">0</div>
+                    <div class="stat-label">Başarımlar</div>
+                </div>
+            </div>
+            <button class="btn" onclick="showProgressPanel()">📊 İlerleme Paneli</button>
+        </div>
+        
+        <!-- Rekabet Sistemi -->
+        <div class="test-section">
+            <h2>🏆 Rekabet Sistemi</h2>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value" id="player-rating">1000</div>
+                    <div class="stat-label">Rating</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="total-wins">0</div>
+                    <div class="stat-label">Galibiyet</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="total-losses">0</div>
+                    <div class="stat-label">Mağlubiyet</div>
+                </div>
+            </div>
+            <button class="btn" onclick="showRivalsPanel()">⚔️ Rakipler Paneli</button>
+            <button class="btn" onclick="simulateMatch()">🎮 Maç Simüle Et</button>
+        </div>
+        
+        <!-- Test Butonları -->
+        <div class="test-section">
+            <h2>🧪 Test Fonksiyonları</h2>
+            <button class="btn" onclick="simulateClicks()">🖱️ 100 Tıklama Simüle Et</button>
+            <button class="btn" onclick="simulateTime()">⏰ Zamanı Hızlandır (+30dk)</button>
+            <button class="btn" onclick="triggerUrgentPopup()">⚡ Acil Popup Göster</button>
+            <button class="btn" onclick="activateUltraMode()">🔥 Ultra Mod Aktif Et</button>
+            <button class="btn" onclick="showRandomReward()">🎁 Rastgele Ödül</button>
+            <button class="btn" onclick="testMilestone()">🏅 Milestone Test</button>
+            <button class="btn btn-danger" onclick="resetAll()">🔄 Tümünü Sıfırla</button>
+        </div>
+        
+        <!-- Log -->
+        <div class="test-section">
+            <h2>📝 Sistem Logu</h2>
+            <div class="log" id="system-log"></div>
+        </div>
+    </div>
+    
+    <!-- Sistemleri yükle -->
+    <script src="addiction-system.js"></script>
+    <script src="progress-tracker.js"></script>
+    <script src="competitive-system.js"></script>
+    
+    <!-- Test fonksiyonları -->
+    <script>
+        // Toast fonksiyonu (basit)
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            toast.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: ${type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : '#3b82f6'};
+                color: white;
+                padding: 1rem 2rem;
+                border-radius: 12px;
+                box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+                z-index: 100000;
+                animation: slideIn 0.3s;
+            `;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.animation = 'slideOut 0.3s';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+            
+            addLog(message);
+        }
+        
+        // Ses fonksiyonu (dummy)
+        function playSound(type) {
+            addLog(`🔊 Ses çalındı: ${type}`);
+        }
+        
+        // Log ekle
+        function addLog(message) {
+            const log = document.getElementById('system-log');
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            log.insertBefore(entry, log.firstChild);
+            
+            // Max 50 log
+            while (log.children.length > 50) {
+                log.removeChild(log.lastChild);
+            }
+        }
+        
+        // İstatistikleri güncelle
+        function updateStats() {
+            if (window.addictionState) {
+                const elapsed = Math.floor((Date.now() - addictionState.sessionStart) / 1000);
+                const minutes = Math.floor(elapsed / 60);
+                const seconds = elapsed % 60;
+                document.getElementById('session-time').textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+                document.getElementById('total-clicks').textContent = addictionState.totalClicks;
+                document.getElementById('total-scrolls').textContent = addictionState.totalScrolls;
+                document.getElementById('combo-multiplier').textContent = addictionState.comboMultiplier + 'x';
+                document.getElementById('urgency-level').textContent = addictionState.urgencyLevel;
+            }
+            
+            if (window.progressState) {
+                document.getElementById('total-playtime').textContent = progressState.totalPlayTime;
+                document.getElementById('total-scenarios').textContent = progressState.totalScenarios;
+                document.getElementById('total-xp').textContent = progressState.totalXPEarned;
+                document.getElementById('total-achievements').textContent = progressState.totalAchievements;
+            }
+            
+            if (window.competitiveState) {
+                document.getElementById('player-rating').textContent = competitiveState.rating;
+                document.getElementById('total-wins').textContent = competitiveState.wins;
+                document.getElementById('total-losses').textContent = competitiveState.losses;
+            }
+        }
+        
+        // Test fonksiyonları
+        function simulateClicks() {
+            for (let i = 0; i < 100; i++) {
+                document.body.click();
+            }
+            showToast('100 tıklama simüle edildi!', 'success');
+        }
+        
+        function simulateTime() {
+            if (window.progressState) {
+                progressState.totalPlayTime += 30;
+                saveProgress();
+                updateStats();
+                showToast('+30 dakika eklendi!', 'success');
+            }
+        }
+        
+        function triggerUrgentPopup() {
+            if (typeof showRandomUrgentPopup === 'function') {
+                showRandomUrgentPopup();
+            }
+        }
+        
+        function simulateMatch() {
+            if (typeof challengeRival === 'function') {
+                challengeRival(1);
+            }
+        }
+        
+        function showRandomReward() {
+            if (typeof showRandomMicroReward === 'function') {
+                showRandomMicroReward();
+            }
+        }
+        
+        function testMilestone() {
+            if (typeof showMilestoneAchievement === 'function') {
+                showMilestoneAchievement(
+                    '🏆 Test Milestone!',
+                    'Bu bir test milestone\'ıdır',
+                    500
+                );
+            }
+        }
+        
+        function resetAll() {
+            if (confirm('Tüm verileri sıfırlamak istediğinize emin misiniz?')) {
+                localStorage.clear();
+                location.reload();
+            }
+        }
+        
+        // Otomatik güncelleme
+        setInterval(updateStats, 1000);
+        
+        // İlk yükleme
+        updateStats();
+        addLog('✅ Test sistemi başlatıldı');
+        
+        // CSS animasyonları ekle
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideIn {
+                from {
+                    transform: translateX(400px);
+                    opacity: 0;
+                }
+                to {
+                    transform: translateX(0);
+                    opacity: 1;
+                }
+            }
+            
+            @keyframes slideOut {
+                from {
+                    transform: translateX(0);
+                    opacity: 1;
+                }
+                to {
+                    transform: translateX(400px);
+                    opacity: 0;
+                }
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+</body>
+</html>

@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KararLab - Özellik Testi</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="advanced-styles.css">
+</head>
+<body>
+    <div style="padding: 2rem; max-width: 1200px; margin: 0 auto;">
+        <h1 style="text-align: center; margin-bottom: 2rem;">🎮 KararLab v2.5 - Özellik Testi</h1>
+        
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+            <button class="btn-primary btn-full" onclick="testDailyReward()">
+                🎁 Günlük Ödül Testi
+            </button>
+            <button class="btn-primary btn-full" onclick="testAchievement()">
+                🏆 Başarı Testi
+            </button>
+            <button class="btn-primary btn-full" onclick="testShop()">
+                🛒 Mağaza Testi
+            </button>
+            <button class="btn-primary btn-full" onclick="testLeaderboard()">
+                📊 Liderlik Testi
+            </button>
+            <button class="btn-primary btn-full" onclick="testTournament()">
+                🎯 Turnuva Testi
+            </button>
+            <button class="btn-primary btn-full" onclick="testLevelUp()">
+                ⬆️ Seviye Atlama Testi
+            </button>
+        </div>
+        
+        <div style="background: var(--card-bg); padding: 2rem; border-radius: 16px; margin-bottom: 2rem;">
+            <h2>Test Kullanıcısı Oluştur</h2>
+            <div style="display: flex; gap: 1rem; margin-top: 1rem;">
+                <input type="text" id="test-username" placeholder="Kullanıcı Adı" style="flex: 1; padding: 0.75rem; border-radius: 8px; border: 2px solid var(--border-color); background: var(--bg-color); color: var(--text-primary);">
+                <button class="btn-secondary" onclick="createTestUser()">Oluştur</button>
+            </div>
+            <div id="test-user-info" style="margin-top: 1rem; color: var(--text-secondary);"></div>
+        </div>
+        
+        <div style="background: var(--card-bg); padding: 2rem; border-radius: 16px;">
+            <h2>Test Sonuçları</h2>
+            <div id="test-results" style="margin-top: 1rem; font-family: monospace; color: var(--text-secondary);"></div>
+        </div>
+    </div>
+    
+    <script src="confetti.js"></script>
+    <script src="sound-system.js"></script>
+    <script src="app.js"></script>
+    <script src="daily-rewards.js"></script>
+    <script src="achievements.js"></script>
+    <script src="shop-system.js"></script>
+    <script src="leaderboard.js"></script>
+    
+    <script>
+        function log(message, type = 'info') {
+            const results = document.getElementById('test-results');
+            const time = new Date().toLocaleTimeString();
+            const icon = type === 'success' ? '✅' : type === 'error' ? '❌' : 'ℹ️';
+            results.innerHTML += `<div style="margin-bottom: 0.5rem;">[${time}] ${icon} ${message}</div>`;
+            results.scrollTop = results.scrollHeight;
+        }
+        
+        function createTestUser() {
+            const username = document.getElementById('test-username').value || 'test_user_' + Date.now();
+            
+            currentUser = {
+                id: Date.now(),
+                name: username,
+                email: username,
+                password: '123456',
+                type: 'student',
+                level: 1,
+                xp: 0,
+                coins: 1000,
+                scenarios: [],
+                achievements: [],
+                shopItems: [],
+                loginStreak: 0,
+                lastLogin: '',
+                createdAt: new Date().toISOString()
+            };
+            
+            saveToStorage('currentUser', currentUser);
+            
+            const users = getFromStorage('users') || [];
+            users.push(currentUser);
+            saveToStorage('users', users);
+            
+            document.getElementById('test-user-info').innerHTML = `
+                <strong>Test Kullanıcısı Oluşturuldu:</strong><br>
+                Kullanıcı: ${currentUser.name}<br>
+                Seviye: ${currentUser.level}<br>
+                XP: ${currentUser.xp}<br>
+                Coin: ${currentUser.coins}
+            `;
+            
+            log(`Test kullanıcısı oluşturuldu: ${username}`, 'success');
+        }
+        
+        function testDailyReward() {
+            log('Günlük ödül testi başlatılıyor...');
+            
+            if (!currentUser) {
+                log('Önce test kullanıcısı oluşturun!', 'error');
+                return;
+            }
+            
+            try {
+                // Günlük ödül modalını göster
+                showDailyRewardModal(Math.floor(Math.random() * 7) + 1);
+                log('Günlük ödül modalı gösterildi', 'success');
+            } catch (error) {
+                log('Hata: ' + error.message, 'error');
+            }
+        }
+        
+        function testAchievement() {
+            log('Başarı testi başlatılıyor...');
+            
+            if (!currentUser) {
+                log('Önce test kullanıcısı oluşturun!', 'error');
+                return;
+            }
+            
+            try {
+                const achievements = ['first_login', 'first_game', 'streak_3', 'level_5'];
+                const randomAch = achievements[Math.floor(Math.random() * achievements.length)];
+                checkAchievement(randomAch);
+                log(`Başarı kazanıldı: ${randomAch}`, 'success');
+            } catch (error) {
+                log('Hata: ' + error.message, 'error');
+            }
+        }
+        
+        function testShop() {
+            log('Mağaza testi başlatılıyor...');
+            
+            if (!currentUser) {
+                log('Önce test kullanıcısı oluşturun!', 'error');
+                return;
+            }
+            
+            try {
+                showShop();
+                log('Mağaza açıldı', 'success');
+            } catch (error) {
+                log('Hata: ' + error.message, 'error');
+            }
+        }
+        
+        function testLeaderboard() {
+            log('Liderlik tablosu testi başlatılıyor...');
+            
+            try {
+                // Birkaç test kullanıcısı ekle
+                const users = getFromStorage('users') || [];
+                for (let i = 0; i < 5; i++) {
+                    users.push({
+                        id: Date.now() + i,
+                        name: `Test User ${i + 1}`,
+                        email: `test${i}@test.com`,
+                        type: 'student',
+                        level: Math.floor(Math.random() * 10) + 1,
+                        xp: Math.floor(Math.random() * 1000),
+                        coins: Math.floor(Math.random() * 500),
+                        scenarios: Array(Math.floor(Math.random() * 20)).fill({}),
+                        loginStreak: Math.floor(Math.random() * 7)
+                    });
+                }
+                saveToStorage('users', users);
+                
+                showLeaderboard();
+                log('Liderlik tablosu açıldı', 'success');
+            } catch (error) {
+                log('Hata: ' + error.message, 'error');
+            }
+        }
+        
+        function testTournament() {
+            log('Turnuva testi başlatılıyor...');
+            
+            try {
+                showWeeklyTournament();
+                log('Turnuva modalı açıldı', 'success');
+            } catch (error) {
+                log('Hata: ' + error.message, 'error');
+            }
+        }
+        
+        function testLevelUp() {
+            log('Seviye atlama testi başlatılıyor...');
+            
+            if (!currentUser) {
+                log('Önce test kullanıcısı oluşturun!', 'error');
+                return;
+            }
+            
+            try {
+                currentUser.level = (currentUser.level || 1) + 1;
+                showLevelUpModal(currentUser.level);
+                log(`Seviye ${currentUser.level}'e atlandı`, 'success');
+            } catch (error) {
+                log('Hata: ' + error.message, 'error');
+            }
+        }
+        
+        // Sayfa yüklendiğinde
+        log('Test sayfası hazır. Önce test kullanıcısı oluşturun.');
+    </script>
+</body>
+</html>

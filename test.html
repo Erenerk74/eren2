@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>Test - Buton Kontrolü</title>
+</head>
+<body>
+    <h1>Buton Test</h1>
+    <button onclick="alert('Giriş Yap çalışıyor!')">Test Giriş Yap</button>
+    <button onclick="alert('Kayıt Ol çalışıyor!')">Test Kayıt Ol</button>
+    
+    <hr>
+    
+    <button onclick="showLogin()">Gerçek Giriş Yap</button>
+    <button onclick="showRegister()">Gerçek Kayıt Ol</button>
+    
+    <script src="app.js"></script>
+    
+    <script>
+        console.log('Test sayfası yüklendi');
+        console.log('showLogin fonksiyonu:', typeof showLogin);
+        console.log('showRegister fonksiyonu:', typeof showRegister);
+        console.log('showPage fonksiyonu:', typeof showPage);
+    </script>
+</body>
+</html>

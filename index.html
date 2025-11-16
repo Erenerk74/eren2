@@ -6,6 +6,70 @@
     <meta name="description" content="Novaşehir'i sürdürülebilir bir geleceğe taşıyabilir misin? Etkileşimli şehir planlama simülasyonu.">
     <meta name="theme-color" content="#6366f1">
     <title>KararLab - Novaşehir Sürdürülebilir Şehir Simülatörü</title>
+    
+    <!-- Yükleme Animasyonu Stili -->
+    <style>
+        #page-loader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 99999;
+            transition: opacity 0.5s ease, visibility 0.5s ease;
+        }
+        
+        #page-loader.hidden {
+            opacity: 0;
+            visibility: hidden;
+        }
+        
+        .loader-content {
+            text-align: center;
+            color: white;
+        }
+        
+        .loader-logo {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            animation: pulse 2s ease-in-out infinite;
+        }
+        
+        .loader-title {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 2rem;
+        }
+        
+        .loader-spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+        
+        .loader-text {
+            font-size: 1rem;
+            opacity: 0.9;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+    </style>
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="advanced-styles.css">
     <link rel="stylesheet" href="theme-light.css">
@@ -15,6 +79,16 @@
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='0.9em' font-size='90'>🏙️</text></svg>">
 </head>
 <body>
+    <!-- Yükleme Animasyonu -->
+    <div id="page-loader">
+        <div class="loader-content">
+            <div class="loader-logo">🏙️</div>
+            <div class="loader-title">KararLab</div>
+            <div class="loader-spinner"></div>
+            <div class="loader-text">Yükleniyor...</div>
+        </div>
+    </div>
+
     <!-- Ana Sayfa / Landing Page -->
     <div id="landing-page" class="page active">
         <div class="landing-background">
@@ -92,20 +166,41 @@
             <p>Sınıfınız için özel raporlar ve grup çalışması özellikleri sizi bekliyor</p>
             <button class="btn-large btn-primary" onclick="showRegister()">Öğretmen Hesabı Oluştur</button>
         </section>
-    </div>
+    </div> <!-- landing-page kapanış -->
 
     <!-- Giriş Ekranı -->
     <div id="login-page" class="page">
+        <div class="auth-background">
+            <div class="gradient-orb orb-1"></div>
+            <div class="gradient-orb orb-2"></div>
+        </div>
         <div class="auth-container">
-            <h2>Giriş Yap</h2>
+            <div class="auth-logo">🏙️</div>
+            <h2>Hoş Geldiniz</h2>
+            <p class="auth-subtitle">KararLab hesabınıza giriş yapın</p>
             <form id="login-form" onsubmit="handleLogin(event)">
-                <input type="text" id="login-email" placeholder="Kullanıcı Adı veya E-posta" required>
-                <input type="password" id="login-password" placeholder="Şifre" required>
+                <div class="input-group">
+                    <span class="input-icon">👤</span>
+                    <input type="text" id="login-email" placeholder="Kullanıcı Adı veya E-posta" required>
+                </div>
+                <div class="input-group">
+                    <span class="input-icon">🔒</span>
+                    <input type="password" id="login-password" placeholder="Şifre" required>
+                    <button type="button" class="password-toggle" onclick="togglePassword('login-password')">👁️</button>
+                </div>
                 <label class="checkbox-label">
-                    <input type="checkbox"> Beni hatırla
+                    <input type="checkbox" id="remember-me"> 
+                    <span>Beni hatırla</span>
                 </label>
-                <button type="submit" class="btn-primary btn-full">Giriş Yap</button>
+                <button type="submit" class="btn-primary btn-full">
+                    <span>Giriş Yap</span>
+                    <span class="btn-arrow">→</span>
+                </button>
                 <a href="#" class="link" onclick="showPasswordReset(); return false;">Şifremi unuttum</a>
+                <div class="auth-divider">
+                    <span>veya</span>
+                </div>
+                <button type="button" class="btn-secondary btn-full" onclick="showRegister()">Yeni Hesap Oluştur</button>
             </form>
             <button class="btn-text" onclick="showLanding()">← Ana Sayfaya Dön</button>
         </div>
@@ -113,16 +208,33 @@
 
     <!-- Şifre Sıfırlama Ekranı -->
     <div id="password-reset-page" class="page">
+        <div class="auth-background">
+            <div class="gradient-orb orb-1"></div>
+            <div class="gradient-orb orb-2"></div>
+        </div>
         <div class="auth-container">
+            <div class="auth-logo">🔑</div>
             <h2>Şifre Sıfırlama</h2>
-            <p style="text-align: center; color: var(--text-secondary); margin-bottom: 2rem;">
-                Kullanıcı adınızı girin, yeni şifrenizi belirleyin.
-            </p>
+            <p class="auth-subtitle">Kullanıcı adınızı girin ve yeni şifrenizi belirleyin</p>
             <form id="password-reset-form" onsubmit="handlePasswordReset(event)">
-                <input type="text" id="reset-email" placeholder="Kullanıcı Adı" required>
-                <input type="password" id="reset-new-password" placeholder="Yeni Şifre" required>
-                <input type="password" id="reset-confirm-password" placeholder="Yeni Şifre (Tekrar)" required>
-                <button type="submit" class="btn-primary btn-full">Şifreyi Sıfırla</button>
+                <div class="input-group">
+                    <span class="input-icon">👤</span>
+                    <input type="text" id="reset-email" placeholder="Kullanıcı Adı" required>
+                </div>
+                <div class="input-group">
+                    <span class="input-icon">🔒</span>
+                    <input type="password" id="reset-new-password" placeholder="Yeni Şifre (en az 6 karakter)" required minlength="6">
+                    <button type="button" class="password-toggle" onclick="togglePassword('reset-new-password')">👁️</button>
+                </div>
+                <div class="input-group">
+                    <span class="input-icon">✅</span>
+                    <input type="password" id="reset-confirm-password" placeholder="Yeni Şifre (Tekrar)" required minlength="6">
+                    <button type="button" class="password-toggle" onclick="togglePassword('reset-confirm-password')">👁️</button>
+                </div>
+                <button type="submit" class="btn-primary btn-full">
+                    <span>Şifreyi Sıfırla</span>
+                    <span class="btn-arrow">→</span>
+                </button>
             </form>
             <button class="btn-text" onclick="showLogin()">← Giriş Sayfasına Dön</button>
         </div>
@@ -130,25 +242,58 @@
 
     <!-- Kayıt Ekranı -->
     <div id="register-page" class="page">
+        <div class="auth-background">
+            <div class="gradient-orb orb-1"></div>
+            <div class="gradient-orb orb-2"></div>
+        </div>
         <div class="auth-container">
-            <h2>Kayıt Ol</h2>
+            <div class="auth-logo">🏙️</div>
+            <h2>Hesap Oluştur</h2>
+            <p class="auth-subtitle">KararLab'e katılın ve sürdürülebilir şehirler inşa edin</p>
             <form id="register-form" onsubmit="handleRegister(event)">
-                <input type="text" id="reg-name" placeholder="Ad Soyad" required>
-                <input type="text" id="reg-email" placeholder="Kullanıcı Adı (benzersiz olmalı)" required>
-                <input type="password" id="reg-password" placeholder="Şifre" required>
-                <select id="reg-type" required onchange="toggleTeacherFields()">
-                    <option value="">Kullanıcı Tipi Seçin</option>
-                    <option value="student">Öğrenci</option>
-                    <option value="teacher">Öğretmen</option>
-                </select>
+                <div class="input-group">
+                    <span class="input-icon">👤</span>
+                    <input type="text" id="reg-name" placeholder="Ad Soyad" required>
+                </div>
+                <div class="input-group">
+                    <span class="input-icon">✉️</span>
+                    <input type="text" id="reg-email" placeholder="Kullanıcı Adı (benzersiz olmalı)" required>
+                </div>
+                <div class="input-group">
+                    <span class="input-icon">🔒</span>
+                    <input type="password" id="reg-password" placeholder="Şifre (en az 6 karakter)" required minlength="6">
+                    <button type="button" class="password-toggle" onclick="togglePassword('reg-password')">👁️</button>
+                </div>
+                <div class="input-group">
+                    <span class="input-icon">🎭</span>
+                    <select id="reg-type" required onchange="toggleTeacherFields()">
+                        <option value="">Kullanıcı Tipi Seçin</option>
+                        <option value="student">🎓 Öğrenci</option>
+                        <option value="teacher">👨‍🏫 Öğretmen</option>
+                    </select>
+                </div>
                 <div id="teacher-fields" style="display:none;">
-                    <input type="text" id="reg-school" placeholder="Okul Adı">
-                    <input type="text" id="reg-branch" placeholder="Branş">
+                    <div class="input-group">
+                        <span class="input-icon">🏫</span>
+                        <input type="text" id="reg-school" placeholder="Okul Adı">
+                    </div>
+                    <div class="input-group">
+                        <span class="input-icon">📚</span>
+                        <input type="text" id="reg-branch" placeholder="Branş">
+                    </div>
                 </div>
                 <label class="checkbox-label">
-                    <input type="checkbox" required> KVKK ve gizlilik politikasını kabul ediyorum
+                    <input type="checkbox" required> 
+                    <span>KVKK ve <a href="#" onclick="showPrivacyPolicy(); return false;">gizlilik politikasını</a> kabul ediyorum</span>
                 </label>
-                <button type="submit" class="btn-primary btn-full">Kayıt Ol</button>
+                <button type="submit" class="btn-primary btn-full">
+                    <span>Kayıt Ol</span>
+                    <span class="btn-arrow">→</span>
+                </button>
+                <div class="auth-divider">
+                    <span>veya</span>
+                </div>
+                <button type="button" class="btn-secondary btn-full" onclick="showLogin()">Zaten Hesabım Var</button>
             </form>
             <button class="btn-text" onclick="showLanding()">← Ana Sayfaya Dön</button>
         </div>
@@ -203,7 +348,9 @@
                     <button class="btn-small btn-secondary" onclick="showFriendsPanel()">👥 Arkadaşlar</button>
                     <button class="btn-small btn-secondary" onclick="startQuiz()">🧠 Quiz</button>
                     <button class="btn-small btn-secondary" onclick="showAchievements()">🎯 Başarılar</button>
-                    <button class="btn-small btn-secondary" onclick="showDailyQuests()">📅 Görevler</button>
+                    <button class="btn-small btn-primary" onclick="showDailyQuestsPanel()" style="background: var(--gradient-4);">📅 Günlük Görevler</button>
+                    <button class="btn-small btn-primary" onclick="showProgressPanel()" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);">📈 İlerleme</button>
+                    <button class="btn-small btn-primary" onclick="showRivalsPanel()" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);">⚔️ Rakipler</button>
                 </div>
             </div>
 
@@ -216,7 +363,40 @@
                 </div>
             </div>
 
-            <div class="classes-section">
+            <div class="mini-games-section" style="margin-top: 2rem;">
+                <h3>🎮 Günlük Mini Oyunlar</h3>
+                <div class="mini-games-grid">
+                    <div class="mini-game-card" onclick="showSpinWheel()">
+                        <div class="mini-game-status" id="spin-status">🎡</div>
+                        <div class="mini-game-icon">🎡</div>
+                        <div class="mini-game-title">Şans Çarkı</div>
+                        <div class="mini-game-desc">Çevir, kazan!</div>
+                        <div class="mini-game-reward">50-500 XP</div>
+                    </div>
+                    <div class="mini-game-card" onclick="showScratchCard()">
+                        <div class="mini-game-status" id="scratch-status">🎫</div>
+                        <div class="mini-game-icon">🎫</div>
+                        <div class="mini-game-title">Kazı Kazan</div>
+                        <div class="mini-game-desc">Kaz, ödülünü gör!</div>
+                        <div class="mini-game-reward">100-500 XP</div>
+                    </div>
+                    <div class="mini-game-card" onclick="showDailyTrivia()">
+                        <div class="mini-game-status">🧠</div>
+                        <div class="mini-game-icon">🧠</div>
+                        <div class="mini-game-title">Günlük Trivia</div>
+                        <div class="mini-game-desc">Bil, kazan!</div>
+                        <div class="mini-game-reward">50 XP</div>
+                    </div>
+                    <div class="mini-game-card" onclick="showReferralPanel()">
+                        <div class="mini-game-icon">👥</div>
+                        <div class="mini-game-title">Arkadaş Davet</div>
+                        <div class="mini-game-desc">Davet et, kazan!</div>
+                        <div class="mini-game-reward">200 XP/kişi</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="classes-section"></div>
                 <h3>Sınıfım</h3>
                 <div id="student-class-info"></div>
                 <button class="btn-secondary" onclick="showJoinClassModal()">+ Sınıfa Katıl</button>
@@ -235,8 +415,14 @@
             <div class="game-header">
                 <div class="logo">KararLab</div>
                 <div class="header-actions">
-                    <button class="theme-toggle" onclick="toggleTheme()" title="Tema Değiştir">
+                    <button class="theme-toggle" onclick="toggleTheme()" title="Tema Değiştir (T)">
                         <span class="theme-icon">🌙</span>
+                    </button>
+                    <button class="theme-toggle" onclick="toggleGameSound()" title="Ses Aç/Kapat (S)">
+                        <span id="sound-icon">🔊</span>
+                    </button>
+                    <button class="theme-toggle" onclick="showKeyboardHelp()" title="Yardım (H)">
+                        <span>❓</span>
                     </button>
                     <div class="turn-indicator">
                         <span id="current-turn">Tur 0</span>
@@ -251,6 +437,32 @@
 
                 <div class="indicators-panel">
                     <h3>Göstergeler</h3>
+                    
+                    <!-- Yeni: Halk Mutluluğu -->
+                    <div class="indicator-special">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                            <span style="font-weight: 600;">😊 Halk Mutluluğu</span>
+                            <span class="indicator-value" id="ind-happiness">%50</span>
+                        </div>
+                        <div style="background: #e5e7eb; border-radius: 10px; height: 8px; overflow: hidden;">
+                            <div id="happiness-bar" style="height: 100%; width: 50%; background: #f59e0b; transition: all 0.5s;"></div>
+                        </div>
+                        <div id="happiness-trend" style="font-size: 0.75rem; color: #6b7280; margin-top: 0.25rem;"></div>
+                    </div>
+                    
+                    <!-- Yeni: Başkan Desteği -->
+                    <div class="indicator-special">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                            <span style="font-weight: 600;">👔 Başkan Desteği</span>
+                            <span class="indicator-value" id="ind-support">%50</span>
+                        </div>
+                        <div style="background: #e5e7eb; border-radius: 10px; height: 8px; overflow: hidden;">
+                            <div id="support-bar" style="height: 100%; width: 50%; background: #6366f1; transition: all 0.5s;"></div>
+                        </div>
+                    </div>
+                    
+                    <hr style="margin: 1rem 0; border: none; border-top: 1px solid #e5e7eb;">
+                    
                     <div class="indicator">
                         <span>Hava Kalitesi</span>
                         <span class="indicator-value" id="ind-air">Orta</span>
@@ -274,6 +486,27 @@
                     <div class="indicator">
                         <span>Ekonomi</span>
                         <span class="indicator-value" id="ind-economy">Büyüyen</span>
+                    </div>
+                    
+                    <hr style="margin: 1rem 0; border: none; border-top: 1px solid #e5e7eb;">
+                    
+                    <!-- Karar Geçmişi -->
+                    <div id="decision-history" style="margin-top: 1rem;">
+                        <h4 style="font-size: 0.9rem; margin-bottom: 0.5rem; color: var(--text-secondary);">📋 Karar Geçmişi</h4>
+                        <div id="history-list" style="font-size: 0.8rem; color: var(--text-secondary);"></div>
+                    </div>
+                    
+                    <!-- Grafik Butonları -->
+                    <div id="chart-buttons" style="margin-top: 1rem; display: none;">
+                        <button class="btn-small btn-secondary" onclick="showHappinessChart()" style="width: 100%; margin-bottom: 0.5rem;">
+                            📊 Mutluluk Grafiği
+                        </button>
+                        <button class="btn-small btn-secondary" onclick="showSupportChart()" style="width: 100%; margin-bottom: 0.5rem;">
+                            📊 Destek Grafiği
+                        </button>
+                        <button class="btn-small btn-secondary" onclick="showQuickStats()" style="width: 100%;">
+                            📈 Hızlı İstatistik
+                        </button>
                     </div>
                 </div>
             </div>
@@ -362,32 +595,64 @@
         </header>
 
         <div class="dashboard-container">
+            <!-- Hızlı Eylemler -->
+            <div class="admin-quick-actions">
+                <button class="action-card" onclick="showAdminStats()">
+                    <div class="action-icon">📊</div>
+                    <div class="action-text">
+                        <h4>Detaylı İstatistikler</h4>
+                        <p>Tüm verileri analiz et</p>
+                    </div>
+                </button>
+                <button class="action-card" onclick="exportAllData()">
+                    <div class="action-icon">💾</div>
+                    <div class="action-text">
+                        <h4>Yedek Al</h4>
+                        <p>Tüm verileri indir</p>
+                    </div>
+                </button>
+                <button class="action-card" onclick="importData()">
+                    <div class="action-icon">📤</div>
+                    <div class="action-text">
+                        <h4>Veri Yükle</h4>
+                        <p>Yedekten geri yükle</p>
+                    </div>
+                </button>
+                <button class="action-card" onclick="generateSyncCode()">
+                    <div class="action-icon">🔄</div>
+                    <div class="action-text">
+                        <h4>Senkronize Et</h4>
+                        <p>Cihazlar arası</p>
+                    </div>
+                </button>
+            </div>
+            
             <div class="admin-stats">
-                <div class="stat-card">
+                <div class="stat-card hover-lift">
                     <div class="stat-icon">👥</div>
                     <div class="stat-info">
-                        <h3 id="admin-total-users">0</h3>
+                        <h3 id="admin-total-users" data-count="0">0</h3>
                         <p>Toplam Kullanıcı</p>
                     </div>
                 </div>
-                <div class="stat-card">
+                <div class="stat-card hover-lift">
                     <div class="stat-icon">🎓</div>
                     <div class="stat-info">
-                        <h3 id="admin-total-students">0</h3>
+                        <h3 id="admin-total-students" data-count="0">0</h3>
                         <p>Öğrenci</p>
                     </div>
                 </div>
-                <div class="stat-card">
+                <div class="stat-card hover-lift">
                     <div class="stat-icon">👨‍🏫</div>
                     <div class="stat-info">
-                        <h3 id="admin-total-teachers">0</h3>
+                        <h3 id="admin-total-teachers" data-count="0">0</h3>
                         <p>Öğretmen</p>
                     </div>
                 </div>
-                <div class="stat-card">
+                <div class="stat-card hover-lift">
                     <div class="stat-icon">🎮</div>
                     <div class="stat-info">
-                        <h3 id="admin-total-scenarios">0</h3>
+                        <h3 id="admin-total-scenarios" data-count="0">0</h3>
                         <p>Oynanan Senaryo</p>
                     </div>
                 </div>
@@ -396,9 +661,13 @@
             <div class="classes-section">
                 <div class="section-header">
                     <h3>Kullanıcı Yönetimi</h3>
-                    <div style="display: flex; gap: 0.5rem;">
-                        <button class="btn-secondary btn-small" onclick="exportUsersData()">📥 Dışa Aktar</button>
-                        <button class="btn-secondary btn-small" onclick="showAdminStats()">📊 Detaylı İstatistik</button>
+                    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                        <button class="btn-secondary btn-small" onclick="exportAllData()">� Tüm Veriyi İ<ndir</button>
+                        <button class="btn-secondary btn-small" onclick="importData()">📤 Veri Yükle</button>
+                        <button class="btn-secondary btn-small" onclick="generateSyncCode()">🔄 Senkronizasyon Kodu</button>
+                        <button class="btn-secondary btn-small" onclick="applySyncCode()">🔗 Kod Uygula</button>
+                        <button class="btn-secondary btn-small" onclick="exportUsersData()">📥 CSV İndir</button>
+                        <button class="btn-secondary btn-small" onclick="showAdminStats()">📊 İstatistik</button>
                     </div>
                 </div>
                 <div id="admin-users-list"></div>
@@ -418,14 +687,53 @@
         </div>
     </div>
 
+    <script src="cloud-sync.js"></script>
     <script src="theme.js"></script>
     <script src="sound-system.js"></script>
     <script src="animations.js"></script>
+    <script src="confetti.js"></script>
+    <script src="chart.js"></script>
+    <script src="keyboard-shortcuts.js"></script>
+    <script src="daily-system.js"></script>
+    <script src="daily-rewards.js"></script>
+    <script src="achievements.js"></script>
+    <script src="shop-system.js"></script>
+    <script src="leaderboard.js"></script>
+    <script src="streak-system.js"></script>
+    <script src="mini-games.js"></script>
+    <script src="referral-system.js"></script>
+    <script src="daily-quests.js"></script>
+    <script src="auto-notifications.js"></script>
+    <script src="live-feedback.js"></script>
+    <script src="hourly-challenges.js"></script>
+    <script src="addiction-system.js"></script>
+    <script src="progress-tracker.js"></script>
+    <script src="competitive-system.js"></script>
     <script src="app.js"></script>
     <script src="game-advanced.js"></script>
     <script src="quiz-system.js"></script>
     <script src="social-features.js"></script>
     <script src="statistics.js"></script>
     <script src="notifications.js"></script>
+    <script src="admin-features.js"></script>
+    
+    <!-- Yükleme Animasyonunu Gizle -->
+    <script>
+        // Hemen gizle - butonları engellemesi için
+        window.addEventListener('DOMContentLoaded', function() {
+            const loader = document.getElementById('page-loader');
+            if (loader) {
+                setTimeout(function() {
+                    loader.classList.add('hidden');
+                    loader.style.display = 'none';
+                }, 300);
+            }
+            
+            // Debug - Fonksiyonları kontrol et
+            console.log('showLogin:', typeof showLogin);
+            console.log('showRegister:', typeof showRegister);
+            console.log('showPage:', typeof showPage);
+        });
+    </script>
 </body>
 </html>
